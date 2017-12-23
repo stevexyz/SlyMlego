@@ -50,7 +50,7 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 
 ## Prerequisites
 
-1. Install all dependencies: python-chess, tensorflow, keras, numpy, stockfish, ... (also interpreter for .sh scripts in case of non Unix platforms, still not tested anyway)
+1. Install all dependencies: e.g. python-chess, tensorflow, keras, numpy, matplotlib, stockfish (also interpreter for .sh scripts in case of non Unix platforms, still not tested anyway)
 2. Obtain/create more fen/epd positions for training (e.g. download the 5 million position giraffe set)
 
 
@@ -97,8 +97,7 @@ Note: features should be the same of the model saved else input layer will not m
 ## TROUBLESHOOTING
 
 The app seems "waiting" at the beginning or during epoch execution</br>
-    -> Do you have samples in the inputs to be processed directory?</br>
-        -> If so you can either `PrepareInputs.py` or run `TrainModel.py` with optional epd input file as parameter
+    -> Do you have samples in the inputs to be processed directory? If not you can either `PrepareInputs.py` or run `TrainModel.py` with optional epd input file as parameter
 
 The app seems "waiting" at the end of the epoch</br>
     -> Do you have samples in the validation directory?
@@ -130,8 +129,8 @@ Python file | Description
 Const.py | Common constant values used in other files
 Eval.py | Contains evaluation function (to be inserted in chess engine)
 FeaturesExtraction.py | Extract features vector "X" from a chess position
-PrepareInput.py | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]
-TrainModel.py | Model creation and training <br/> Usage: TrainModel.py [fenOrEpdFile [startingPosition]] <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
+PrepareInput.py | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: `PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]`
+TrainModel.py | Model creation and training <br/> Usage: `TrainModel.py [fenOrEpdFile [startingPosition]]` <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
 
 Auxiliary shell script | Description
 ---- | ----
@@ -149,9 +148,9 @@ print-x.py | Print the extracted feature vectors of the already processed positi
 
 Up to now I've just tested with CPU, running just some models one night each. From the chart seems the system is learning, but with a very slow rate for now. Hope to find better models or new features to improve the situation. As said if someone would try it with a better hw or more time or different models please share the experience (e.g. with a pull request or opening an issue)!
 
-![TF scalars](https://github.com/stevexyz/SlyMlego/blob/master/docs/ex01.png)
+<img src="https://github.com/stevexyz/SlyMlego/blob/master/docs/ex01.png" alt="TF scalars" style="width: 600px;"/>
 
-![Confusion graph](https://github.com/stevexyz/SlyMlego/blob/master/docs/ex02.png)
+<img src="https://github.com/stevexyz/SlyMlego/blob/master/docs/ex02.png" alt="Confusion graph" style="width: 400px;"/>
 
 
 ## Acknowledgements
@@ -163,5 +162,5 @@ Thanks to:
 
 ## LICENSE
 
-Sly Mlego is licensed under the Affero GPL v3 (or any later version at your option). Check out LICENSE.txt for the full text.
+Sly Mlego is licensed under the Affero GPL v3 (or any later version at your option). Check out LICENSE file for the full text.
 
