@@ -21,7 +21,7 @@ Note that the chess engine used to label positions is exploring a full tree of t
 
 ## Tasks
 
-Tasks done:
+Tasks completed:
 - Creation of the framework to prepare input data (extract and save features together with labels)
 - Implementation of the extraction of a number of features (30 total up to now)
 - Implementation of the training process for the models with fit "generator" and checkpoints model saving
@@ -149,9 +149,9 @@ print-x.py | Print the extracted feature vectors of the already processed positi
 
 Up to now I've just tested with CPU, running just some models one night each. From the chart seems the system is learning, but with a very slow rate for now. Hope to find better models or new features to improve the situation. As said if someone would try it with a better hw or more time or different models please share the experience (e.g. with a pull request or opening an issue)!
 
-![TF scalars](./ex1.png)
+![TF scalars](https://github.com/stevexyz/SlyMlego/blob/master/docs/ex01.png)
 
-![Confusion graph](./ex2.png)
+![Confusion graph](https://github.com/stevexyz/SlyMlego/blob/master/docs/ex02.png)
 
 
 ## Acknowledgements
