@@ -138,7 +138,7 @@ clean-model.sh | Clean all model files in order to start from scratch with a new
 clean-model-and-data.sh | Clean all model files but also extracts data (to be used when features extraction changed)
 monitor-log.sh | When training process in ongoing shows main advancements
 monitor-tensorboard.sh | Launch tensorboard for training process analysis (and/or TF model exploration)
-mv-backtoprocess.py | Move already processed files back in the process directory
+mv-backtoprocess.py | Move the "already processed" files back in the "to be processed" directory (a script was required since command line is not able to manage very large number of files as it can happen to have)
 mv-tovalidation.py | Move the files in the "to be processed" directory to the directory used to validate model
 print-confusiongraph.py | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
 print-x.py | Print the extracted feature vectors of the already processed position given in input (pickle file)
