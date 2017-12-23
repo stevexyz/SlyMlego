@@ -99,3 +99,23 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# slymlego miscellaneous directory and files
+old*/
+Old*/
+OLD*/
+temp*/
+Temp*/
+TEMP*/
+local*/
+Local*/
+LOCAL*/
+*~
+*.old
+*.Old
+*.OLD
+*.bak
+*.Bak
+*.BAK
+__*
+
