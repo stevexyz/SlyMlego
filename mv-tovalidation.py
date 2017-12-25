@@ -6,8 +6,8 @@ import os
 import sys
 import subprocess
 
-if not os.path.exists(Const.VALIDATIONDATADIR)
-    os.makedir(Const.VALIDATIONDATADIR)
+if not os.path.exists(Const.VALIDATIONDATADIR):
+    os.makedirs(Const.VALIDATIONDATADIR)
 
 if len(sys.argv) >= 2:
     totalfiles = int(sys.argv[1])

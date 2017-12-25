@@ -100,7 +100,7 @@ else:
 
     #@modelbegin
 
-    modelname = "F30-D56I0B0AL-F-D1792I0B0AS-D1792I0B0AR-D1I0B0AL-MSE-NADAM"
+    modelname = "F30-D56I0B0AL-F-D1920I0B0AS-D1920I0B0AR-D1I0B0AL-MSE-NADAM"
 
     # create a "simple" sequentially layered model
     model = Sequential()
@@ -117,13 +117,13 @@ else:
         Flatten())
     model.add(
         Dense(
-            8*8*28, 
+            8*8*30, 
             kernel_initializer='zeros', 
             bias_initializer='zeros',
             activation='sigmoid'))
     model.add(
         Dense(
-            8*8*28, 
+            8*8*30, 
             kernel_initializer='zeros', 
             bias_initializer='zeros',
             activation='relu'))
