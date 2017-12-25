@@ -50,7 +50,7 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 
 ## Prerequisites
 
-1. Install all dependencies: e.g. python-chess, tensorflow, keras, numpy, matplotlib, stockfish (also interpreter for .sh scripts in case of non Unix platforms, still not tested anyway)
+1. Install all dependencies: e.g. python-chess, pickledb, tensorflow, keras, numpy, matplotlib, stockfish (also interpreter for .sh scripts in case of non Unix platforms, still not tested anyway)
 2. Obtain/create more fen/epd positions for training (e.g. download the 5 million position giraffe set)
 
 
