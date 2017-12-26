@@ -3,9 +3,9 @@
 import Const
 
 # to be incremented over time (quick beginning precise later)
-EPOCHSTEPS = 100 # number of minibatch samples (one sample given back for each generator call)
+EPOCHSTEPS = 1000 # number of minibatch samples (one sample given back for each generator call)
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 20 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+VALIDATIONSTEPS = 200 # number of minibatch samples to be given for validation (one sample given back for each generator call)
 
 
 from keras.models import Sequential
@@ -51,7 +51,7 @@ def get_chess_training_positions(pickledirectory,validationset=False):
             yield (np.array([X]),np.array([Y]))
         if epdfile!=None and not validationset:
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic :)
-            print("./PrepareInput.py "+epdfile+str(currentline)+str(EPOCHSTEPS))
+            print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS))
             subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS)])
 
 
@@ -100,44 +100,50 @@ else:
 
     #@modelbegin
 
-    modelname = "F30-D56I0B0AL-F-D1920I0B0AS-D1920I0B0AR-D1I0B0AL-MSE-NADAM"
+    modelname = "F30-D128IRB0AT-F-D2048IRB0AR-D2048IRB0AR-D1IRB0AL-MSE-ADAM"
 
     # create a "simple" sequentially layered model
+
     model = Sequential()
+
     model.add(
         Dense(
-            28*2, 
+            64*2, 
             input_shape=
                 (Const.NUMFEATURES, 8, 8) if K.image_dim_ordering()=="th" \
                      else (8, 8, Const.NUMFEATURES), #tf
-            kernel_initializer='zeros', # 'zeros', 'uniform', 'random_uniform',
+            kernel_initializer='random_uniform', # 'zeros', 'uniform', 'random_uniform',
             bias_initializer='zeros',
-            activation='linear'))
+            activation='tanh')) # 'hard_sigmoid', 'linear', 'relu', 'sigmoid', 'softplus', 'softsign', 'tanh'
+
     model.add(
         Flatten())
+
     model.add(
         Dense(
-            8*8*30, 
-            kernel_initializer='zeros', 
-            bias_initializer='zeros',
-            activation='sigmoid'))
-    model.add(
-        Dense(
-            8*8*30, 
-            kernel_initializer='zeros', 
+            8*8*32, 
+            kernel_initializer='random_uniform', 
             bias_initializer='zeros',
             activation='relu'))
+
+    model.add(
+        Dense(
+            8*8*32, 
+            kernel_initializer='random_uniform', 
+            bias_initializer='zeros',
+            activation='relu'))
+
     model.add(
         Dense(
             1, 
-            kernel_initializer='zeros', 
+            kernel_initializer='random_uniform', 
             bias_initializer='zeros',
-            activation='linear'))
+            activation='linear')) # most probably this will be linear in all the models
 
     # add loss function and optimizer
     model.compile(
         loss='mean_squared_error', # accuracy, mean_squared_logarithmic_error, mean_squared_error 
-        optimizer='nadam', 
+        optimizer='adam', 
         metrics=['accuracy']) # just add some metric display to the loss one
 
     #@modelend

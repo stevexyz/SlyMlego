@@ -50,7 +50,9 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 
 ## Prerequisites
 
-1. **Install all dependencies**, as:
+1. Unix environment (tested with Ubuntu 16.04). With some adjustments (e.g. interpreter for .sh scripts, libraries, etc.) maybe it can work also on Windows, but is not tested nor recommended (it is not an usual platform for machine learning)
+
+2. **Install all dependencies**, as:
    - python-chess
    - pickledb
    - tensorflow
@@ -61,8 +63,8 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
    - h5py
    - python3-tk
    - python-pydot / python-pydot-ng / graphviz
-   - also interpreter for .sh scripts in case of non Unix platforms, still not tested anyway)
-2. Obtain/create more fen/epd positions for training (e.g. download the 5 million position giraffe set)
+
+3. Obtain/create more fen/epd positions for training (e.g. download the [5 million position giraffe set](https://bitbucket.org/waterreaction/giraffe/downloads/ccrl4040_shuffled_5M.epd.gz)). In the files there is already for convenience one containing the [strategic test suite](https://sites.google.com/site/strategictestsuite) positions
 
 
 ## HOW-TO
@@ -153,6 +155,17 @@ mv-backtoprocess.py | Move the "already processed" files back in the "to be proc
 mv-tovalidation.py | Move the files in the "to be processed" directory to the directory used to validate model
 print-confusiongraph.py | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
 print-x.py | Print the extracted feature vectors of the already processed position given in input (pickle file)
+
+Temporary files | Description
+---- | ----
+__model.descr | Features and model description (attributes, layers, activators, optimizator etc)
+__model.hdf5  | Trained model snapshot. THE result of all the training effort! (to be load by keras load_model function)
+__model.log | Training log
+__model.pickle | Other model variables (for now contains just the model mane)
+__model.png | Picture of the model
+__inputstobeprocessed | Directory where X files for training are put by PrepareInput.py. The files have a name as `file.epd-linenum-positionnum.pickle`
+__inputsalreadyprocessed | Directory where input files are put after being used in training (to be moved again in to be processed for new trainings)
+__validationdata | Input files to be used for validation of the model after each epoch
 
 
 ## Actual tests
