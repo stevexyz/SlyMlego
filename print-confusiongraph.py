@@ -10,20 +10,27 @@ import pickle
 import os
 import sys
 
-#if len(sys.argv)<2:
-#    print("Print the confusion graph using validation samples")
-#    print("Usage: "+sys.argv[0]+" [<modelfile>]")
-#    exit(1)
+if len(sys.argv)>3:
+    print("Print the confusion graph using validation samples")
+    print("Usage: "+sys.argv[0]+" [<numsamples> [<modelfile>]]")
+    exit(1)
 
-if len(sys.argv)>=2: 
-    eval = Eval(sys.argv[1])
-    print("Using model "+sys.argv[1])
+if len(sys.argv)>=2:
+    numsamples = int(sys.argv[1])
+else:
+    numsamples = 999999999
+
+if len(sys.argv)>=3: 
+    eval = Eval(sys.argv[2])
+    print("Using model "+sys.argv[2])
 else:
     eval = Eval()
 
 xcoords=[]
 ycoords=[]
 for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
+    numsamples -= 1
+    if numsamples<=0: break
     (epd, X, Y) = pickle.load(open(file, "rb"))
     val = eval.EvaluatePosition(epd)[0] # model evaluation
     xcoords.append(Y[0])

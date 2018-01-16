@@ -16,26 +16,25 @@ class Eval:
 
     def __init__(self, modelfile=Const.MODELFILE+".hdf5", openingbookfile=None, tablebases=None):
         self.model = load_model(modelfile)
-        print("Model loaded")
+        print("Model "+modelfile+" loaded")
         #if openingbook != None: self.openingbook = chess.polyglot.open_reader(openingbookfile)
 
+    def EvaluatePositionB(self, board):
+        sign = 1
+        # evaluations are always done on white side
+        if board.turn == chess.BLACK:
+            board = board.mirror()
+            sign = -1
+        # evaluate position
+        X = np.array([fe.extract_features(board)])
+        Y = self.model.predict(X, batch_size=1, verbose=0)
+        return sign * Y[0]
 
     def EvaluatePosition(self, fenstring):
         epdposition = fenstring
         board = chess.Board()
         board.set_epd(epdposition)
-        # evaluations are always done on white side
-        sign = 1
-        if board.turn == chess.BLACK:
-            epdposition = fe.fen_invert_position(epdposition)
-            board.set_epd(epdposition)
-            sign = -1
-        # evaluate position
-        X = np.array([fe.extract_features(board)])
-        Y = self.model.predict(X, batch_size=1, verbose=1)
-        #print(epdposition + ": " + str(Y[0]))
-        return sign * Y[0]
-
+        return self.EvaluatePositionB(board)
 
     #def PredefinedMoves(self, board)
         # look into opening book if required

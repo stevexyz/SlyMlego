@@ -6,12 +6,12 @@ VALIDATIONDATADIR = "__validationdata"
 MODELFILE = "__model"
 
 # engine configuration for input preparation
-MOVETIME = 2000 # increase when model starts to be good
+MOVETIME = 5000 # increase when model starts to be good
 ENGINE1 = "stockfish"
 OPENINGBOOK = "__book.bin"
 
 # misc
-INFINITECP = 9999
+INFINITECP = 29999
 
 # Input matrixes IDs (all 8x8)
 #@featuresbegin

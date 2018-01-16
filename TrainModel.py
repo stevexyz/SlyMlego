@@ -3,9 +3,9 @@
 import Const
 
 # to be incremented over time (quick beginning precise later)
-EPOCHSTEPS = 1000 # number of minibatch samples (one sample given back for each generator call)
+EPOCHSTEPS = 20000 # number of minibatch samples (one sample given back for each generator call)
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 200 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+VALIDATIONSTEPS = 500 # number of minibatch samples to be given for validation (one sample given back for each generator call)
 
 
 from keras.models import Sequential
@@ -100,7 +100,7 @@ else:
 
     #@modelbegin
 
-    modelname = "F30-D128IRB0AT-F-D2048IRB0AR-D2048IRB0AR-D1IRB0AL-MSE-ADAM"
+    modelname = "F30-D128IRB0AL-D128IRB0AT-F-D2048IRB0AR-D2048IRB0AR-D1IRB0AL-MSE-ADAM"
 
     # create a "simple" sequentially layered model
 
@@ -108,27 +108,28 @@ else:
 
     model.add(
         Dense(
-            64*2, 
+            80, 
             input_shape=
                 (Const.NUMFEATURES, 8, 8) if K.image_dim_ordering()=="th" \
                      else (8, 8, Const.NUMFEATURES), #tf
             kernel_initializer='random_uniform', # 'zeros', 'uniform', 'random_uniform',
             bias_initializer='zeros',
-            activation='tanh')) # 'hard_sigmoid', 'linear', 'relu', 'sigmoid', 'softplus', 'softsign', 'tanh'
+            activation='relu')) 
+            # 'hard_sigmoid', 'linear', 'relu', 'sigmoid', 'softplus', 'softsign', 'tanh'
 
     model.add(
         Flatten())
 
     model.add(
         Dense(
-            8*8*32, 
+            8*8*80, 
             kernel_initializer='random_uniform', 
             bias_initializer='zeros',
-            activation='relu'))
+            activation='tanh'))
 
     model.add(
         Dense(
-            8*8*32, 
+            8*8*80, 
             kernel_initializer='random_uniform', 
             bias_initializer='zeros',
             activation='relu'))

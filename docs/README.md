@@ -27,11 +27,11 @@ Tasks completed:
 - Implementation of the training process for the models with fit "generator" and checkpoints model saving
 - Creation of the value function for the engine implementation
 - Creation of some help scripts to be used in the training process
+- Creation of a very simple chess engine implementing the evaluation model
 
 Tasks to be done:
 - Preparation: extract even more features (details down) and use more engines for labelling
 - Training: experiment with different models / verify long training sessions results
-- Testing: Insert evaluation model inside a chess engine (e.g. Sunfish)
 
 Nice things that can be done in later phases:
 - Implementation of "policy network"
@@ -144,6 +144,7 @@ Eval.py | Contains evaluation function (to be inserted in chess engine)
 FeaturesExtraction.py | Extract features vector "X" from a chess position
 PrepareInput.py | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: `PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]`
 TrainModel.py | Model creation and training <br/> Usage: `TrainModel.py [fenOrEpdFile [startingPosition]]` <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
+OnePlyEngine.py | Simple UCI engine (single PLY evaluation). 
 
 Auxiliary shell script | Description
 ---- | ----
