@@ -9,8 +9,6 @@ MODELFILE = "__model"
 MOVETIME = 5000 # increase when model starts to be good
 ENGINE1 = "stockfish"
 OPENINGBOOK = "__book.bin"
-
-# misc
 INFINITECP = 29999
 
 # Input matrixes IDs (all 8x8)
@@ -62,4 +60,3 @@ X_white_king_crown= 28
 X_black_king_crown= 29
 
 #@featuresend
-

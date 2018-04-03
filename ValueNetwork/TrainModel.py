@@ -37,22 +37,28 @@ def get_chess_training_positions(pickledirectory,validationset=False):
     if not validationset:
         if epdfile==None: 
             if not os.path.exists(Const.ALREADYPROCESSEDDIR): os.mkdir(Const.ALREADYPROCESSEDDIR)
-        if currentline==None: 
+        if currentline==None:
             currentline=0
     while(True):
+        sn = 0
+        X = [] ; Y = []
         for file in glob.glob(pickledirectory+"/*.pickle"):
             #print("Loading: "+file)
-            (epd, X, Y) = pickle.load(open(file, "rb"))
+            (epd, X1, Y1) = pickle.load(open(file, "rb"))
+            X.append(X1) ; Y.append(Y1)
             if not validationset:
                 if epdfile!=None:
                     os.remove(file) # created just when needed
                 else:
                     shutil.move(file, Const.ALREADYPROCESSEDDIR)
             yield (np.array([X]),np.array([Y]))
+            sn = sn+1
+            if sn>=SAMPLENUM: break
+        yield (np.array(X),np.array(Y))
         if epdfile!=None and not validationset:
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic :)
-            print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS))
-            subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS)])
+            print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
+            subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS*SAMPLENUM)])
 
 
 #class LossHistory(keras.callbacks.Callback):
@@ -108,13 +114,13 @@ else:
 
     model.add(
         Dense(
-            80, 
+            80,
             input_shape=
                 (Const.NUMFEATURES, 8, 8) if K.image_dim_ordering()=="th" \
                      else (8, 8, Const.NUMFEATURES), #tf
             kernel_initializer='random_uniform', # 'zeros', 'uniform', 'random_uniform',
             bias_initializer='zeros',
-            activation='relu')) 
+            activation='relu'))
             # 'hard_sigmoid', 'linear', 'relu', 'sigmoid', 'softplus', 'softsign', 'tanh'
 
     model.add(
@@ -122,29 +128,29 @@ else:
 
     model.add(
         Dense(
-            8*8*80, 
-            kernel_initializer='random_uniform', 
+            8*8*80,
+            kernel_initializer='random_uniform',
             bias_initializer='zeros',
             activation='tanh'))
 
     model.add(
         Dense(
-            8*8*80, 
-            kernel_initializer='random_uniform', 
+            8*8*80,
+            kernel_initializer='random_uniform',
             bias_initializer='zeros',
             activation='relu'))
 
     model.add(
         Dense(
-            1, 
-            kernel_initializer='random_uniform', 
+            1,
+            kernel_initializer='random_uniform',
             bias_initializer='zeros',
             activation='linear')) # most probably this will be linear in all the models
 
     # add loss function and optimizer
     model.compile(
-        loss='mean_squared_error', # accuracy, mean_squared_logarithmic_error, mean_squared_error 
-        optimizer='adam', 
+        loss='mean_squared_error', # accuracy, mean_squared_logarithmic_error, mean_squared_error
+        optimizer='adam',
         metrics=['accuracy']) # just add some metric display to the loss one
 
     #@modelend
@@ -164,17 +170,16 @@ model.fit_generator(
     steps_per_epoch=EPOCHSTEPS, 
     epochs=EPOCHSNUM, 
     verbose=1, 
-    callbacks=[ 
-        ModelCheckpoint(Const.MODELFILE+".hdf5", monitor='acc', verbose=1, save_best_only=False, mode='max'), 
-        CSVLogger(Const.MODELFILE+".log", separator=";", append=True), 
+    callbacks=[
+        ModelCheckpoint(Const.MODELFILE+".hdf5", monitor='acc', verbose=1, save_best_only=False, mode='max'),
+        CSVLogger(Const.MODELFILE+".log", separator=";", append=True),
         TensorBoard(log_dir="__logs/{}".format(time())),
         #LossHistory(),
         ],
-    validation_data=get_chess_training_positions(Const.VALIDATIONDATADIR, True), 
-    validation_steps=VALIDATIONSTEPS, 
-    class_weight=None, 
-    max_queue_size=1000, 
-    workers=1, 
-    use_multiprocessing=False, 
+    validation_data=get_chess_training_positions(Const.VALIDATIONDATADIR, True),
+    validation_steps=VALIDATIONSTEPS,
+    class_weight=None,
+    max_queue_size=1000,
+    workers=1,
+    use_multiprocessing=False,
     initial_epoch=0 )
-
