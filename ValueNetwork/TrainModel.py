@@ -3,9 +3,10 @@
 import Const
 
 # to be incremented over time (quick beginning precise later)
-EPOCHSTEPS = 20000 # number of minibatch samples (one sample given back for each generator call)
+EPOCHSTEPS = 23 # number of minibatch samples 
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 500 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+VALIDATIONSTEPS = 41 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+SAMPLENUM = 29 # number of data in a generator sample
 
 
 from keras.models import Sequential
@@ -18,6 +19,7 @@ from keras.callbacks import TensorBoard
 from keras import backend as K
 from keras.utils import plot_model
 from time import time
+from time import sleep
 import matplotlib.pyplot as plt
 import numpy as np
 import glob, shutil
@@ -51,10 +53,14 @@ def get_chess_training_positions(pickledirectory,validationset=False):
                     os.remove(file) # created just when needed
                 else:
                     shutil.move(file, Const.ALREADYPROCESSEDDIR)
-            yield (np.array([X]),np.array([Y]))
             sn = sn+1
             if sn>=SAMPLENUM: break
-        yield (np.array(X),np.array(Y))
+        if len(X)>0:
+            yield (np.array(X),np.array(Y))
+        else:
+            print("Not enough elements")
+            sleep(60)
+            
         if epdfile!=None and not validationset:
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic :)
             print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
