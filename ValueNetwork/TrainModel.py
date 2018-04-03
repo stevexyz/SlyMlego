@@ -3,10 +3,10 @@
 import Const
 
 # to be incremented over time (quick beginning precise later)
-EPOCHSTEPS = 23 # number of minibatch samples 
+EPOCHSTEPS = 100 # number of minibatch samples 
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 41 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 29 # number of data in a generator sample
+VALIDATIONSTEPS = 10 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+SAMPLENUM = 100 # number of data in a generator sample
 
 
 from keras.models import Sequential
@@ -46,23 +46,26 @@ def get_chess_training_positions(pickledirectory,validationset=False):
         X = [] ; Y = []
         for file in glob.glob(pickledirectory+"/*.pickle"):
             #print("Loading: "+file)
-            (epd, X1, Y1) = pickle.load(open(file, "rb"))
-            X.append(X1) ; Y.append(Y1)
+            try:
+                (epd, X1, Y1) = pickle.load(open(file, "rb"))
+            except:
+                print("Error on file: "+str(file))
+            else:
+                X.append(X1) ; Y.append(Y1)
+                sn = sn+1
             if not validationset:
                 if epdfile!=None:
                     os.remove(file) # created just when needed
                 else:
                     shutil.move(file, Const.ALREADYPROCESSEDDIR)
-            sn = sn+1
             if sn>=SAMPLENUM: break
         if len(X)>0:
             yield (np.array(X),np.array(Y))
         else:
             print("Not enough elements")
-            sleep(60)
-            
+            sleep(10)
         if epdfile!=None and not validationset:
-            tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic :)
+            tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic...
             print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
             subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS*SAMPLENUM)])
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-./mvback.py
+./mv-backtoprocess.py
 rm __pycache__/*
 rm __model.*
 rm -r __logs/*
