@@ -6,7 +6,7 @@
 
 import Const
 
-from keras import backend as K
+#from keras import backend as K
 
 import sys
 import math

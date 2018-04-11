@@ -5,7 +5,7 @@ sudo -H pip3 install pydot graphviz h5py pickledb python-chess numpy matplotlib
 mkdir __inputstobeprocessed
 mkdir __validationdata
 ./PrepareInput.py sts.epd 1400
-mv __inputstobeprocessed/sts*.pickle __validationdata/
+./mv-tovalidation.py
 
 
 
