@@ -58,7 +58,8 @@ def residual_network(x):
     def grouped_convolution(y, nb_channels, _strides):
         # when `cardinality` == 1 this is just a standard convolution
         if cardinality == 1:
-            return layers.Conv2D(nb_channels, kernel_size=(3, 3), strides=_strides, padding='same')(y)
+            #return layers.Conv2D(nb_channels, kernel_size=(3, 3), strides=_strides, padding='same')(y)
+            return layers.Conv2D(nb_channels, kernel_size=(1, 1), strides=_strides, padding='same')(y)
         
         assert not nb_channels % cardinality
         _d = nb_channels // cardinality
@@ -68,7 +69,8 @@ def residual_network(x):
         groups = []
         for j in range(cardinality):
             group = layers.Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
-            groups.append(layers.Conv2D(_d, kernel_size=(3, 3), strides=_strides, padding='same')(group))
+            #groups.append(layers.Conv2D(_d, kernel_size=(3, 3), strides=_strides, padding='same')(group))
+            groups.append(layers.Conv2D(_d, kernel_size=(1, 1), strides=_strides, padding='same')(group))
             
         # the grouped convolutional layer concatenates them as the outputs of the layer
         y = layers.concatenate(groups)
@@ -113,30 +115,34 @@ def residual_network(x):
         return y
 
     # conv1
-    x = layers.Conv2D(64, kernel_size=(7, 7), strides=(2, 2), padding='same')(x)
+    #x = layers.Conv2D(64, kernel_size=(7, 7), strides=(2, 2), padding='same')(x)
+    x = layers.Conv2D(64, kernel_size=(1, 1), strides=(1, 1), padding='same')(x)
     x = add_common_layers(x)
 
     # conv2
-    x = layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding='same')(x)
+    #x = layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding='same')(x)
     for i in range(3):
         project_shortcut = True if i == 0 else False
-        x = residual_block(x, 128, 256, _project_shortcut=project_shortcut)
+        x = residual_block(x, 128, 1024, _project_shortcut=project_shortcut)
 
     # conv3
     for i in range(4):
         # down-sampling is performed by conv3_1, conv4_1, and conv5_1 with a stride of 2
-        strides = (2, 2) if i == 0 else (1, 1)
-        x = residual_block(x, 256, 512, _strides=strides)
+        #strides = (2, 2) if i == 0 else (1, 1)
+        strides = (1, 1)
+        x = residual_block(x, 512, 1024, _strides=strides)
 
     # conv4
     for i in range(6):
-        strides = (2, 2) if i == 0 else (1, 1)
+        #strides = (2, 2) if i == 0 else (1, 1)
+        strides = (1, 1)
         x = residual_block(x, 512, 1024, _strides=strides)
 
     # conv5
     for i in range(3):
-        strides = (2, 2) if i == 0 else (1, 1)
-        x = residual_block(x, 1024, 2048, _strides=strides)
+        #strides = (2, 2) if i == 0 else (1, 1)
+        strides = (1, 1)
+        x = residual_block(x, 1024, 1024, _strides=strides)
 
     x = layers.GlobalAveragePooling2D()(x)
     x = layers.Dense(1)(x)
