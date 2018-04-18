@@ -6,7 +6,7 @@ import Const
 EPOCHSTEPS = 100 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
 VALIDATIONSTEPS = 20 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 100 # number of data in a generator sample
+SAMPLENUM = 400 # number of data in a generator sample
 
 
 from keras.models import Model
@@ -47,7 +47,7 @@ epdfile=None
 currentline=0
 
 
-def get_chess_training_positions(pickledirectory,validationset=False):
+def get_chess_training_positions(pickledirectory, validationset=False, includerange=False, excluderange=False):
 # for multithread see: http://anandology.com/blog/using-iterators-and-generators/
     global currentline
     if not validationset:
@@ -65,14 +65,15 @@ def get_chess_training_positions(pickledirectory,validationset=False):
             except:
                 print("Error on file: "+str(file))
             else:
-                X.append(X1) 
-                if Y1 < -Const.INFINITECP:
-                    Y1 = -Const.INFINITECP
-                elif Y1 > Const.INFINITECP:
-                    Y1 = Const.INFINITECP
-                Y1 = Y1 / Const.INFINITECP # normalization for tanh activation!
-                Y.append(Y1)
-                sn = sn+1
+                if not (includerange and (Y1<=includerange[0] or Y1>=includerange[1])) and not (excluderange and (Y1>excluderange[0] and Y1<excluderange[1])):
+                    X.append(X1)
+                    if Y1 < -Const.INFINITECP:
+                        Y1 = -Const.INFINITECP
+                    elif Y1 > Const.INFINITECP:
+                        Y1 = Const.INFINITECP
+                    Y1 = Y1 / Const.INFINITECP # normalization for tanh activation!
+                    Y.append(Y1)
+                    sn = sn+1
             if not validationset:
                 try:
                     if epdfile!=None:
@@ -91,6 +92,12 @@ def get_chess_training_positions(pickledirectory,validationset=False):
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic...
             print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
             subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS*SAMPLENUM)])
+
+
+def root_mean_squared_error(y_true, y_pred):
+    return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
+def rmse(y_true, y_pred):
+    return root_mean_squared_error(y_true, y_pred)
 
 
 #class LossHistory(keras.callbacks.Callback):
@@ -132,6 +139,7 @@ if os.path.isfile(Const.MODELFILE+".hdf5"):
 
     # load it
     model = load_model(Const.MODELFILE+".hdf5")
+    (modelname,includerange,excluderange) = pickle.load(open(Const.MODELFILE+".pickle","rb")) # model attributes
     print("Loaded model and weights from file")
 
 else:
@@ -202,13 +210,10 @@ else:
     network = Activation("tanh")(network)
     model = Model(inputs=[input_tensor], outputs=[network])
 
-    def rmse(y_true, y_pred):
-        return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
-
     # add loss function and optimizer
     model.compile(
-        loss='mean_squared_error', # mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
-                                   # squared_hinge, hinge, logcosh, categorical_hinge, 
+        loss='mean_absolute_percentage_error', # mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
+                                   # squared_hinge, hinge, logcosh, categorical_hinge,
                                    # categorical_crossentropy, sparse_categorical_crossentropy, binary_crossentropy,
                                    # kullback_leibler_divergence, poisson, cosine_proximity
         optimizer='nadam', # SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
@@ -218,15 +223,19 @@ else:
                            # Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
                            # Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
                            # Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
-        metrics=["mse", "mae", "mape", "cosine", rmse # mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, cosine_proximity, root_mean_squared_error
+        metrics=["mse", "mae", "mape", "cosine" # mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, cosine_proximity, rmse
                  # binary_accuracy, categorical_accuracy, sparse_categorical_accuracy, top_k_categorical_accuracy(k), sparse_top_k_categorical_accuracy(k)
                 ])
+
+    # include/exclude evaluations in certain ranges of centipawns
+    includerange = False
+    excluderange = (-50,50) # in order to limit error percentage
 
     #@modelend
 
 
     plot_model(model, to_file=Const.MODELFILE+'.png', show_shapes=True, show_layer_names=True)
-    pickle.dump(({"name": modelname}), open(Const.MODELFILE + ".pickle", "wb")) # model attributes
+    pickle.dump((modelname,includerange,excluderange), open(Const.MODELFILE+".pickle","wb")) # model attributes
     subprocess.call(["./extract-model.sh",__file__]) # write model to txt file for document purposes
     print("Newly created model with empty weights")
 
@@ -236,7 +245,7 @@ if len(sys.argv)>=3: currentline=int(sys.argv[2])
 
 # TRAIN!
 model.fit_generator(
-    get_chess_training_positions(Const.TOBEPROCESSEDDIR),
+    get_chess_training_positions(Const.TOBEPROCESSEDDIR, includerange=includerange, excluderange=excluderange),
     steps_per_epoch=EPOCHSTEPS,
     epochs=EPOCHSNUM,
     verbose=1,
@@ -246,11 +255,10 @@ model.fit_generator(
         TensorBoard(log_dir="__logs/{}".format(time())),
         #LossHistory(),
         ],
-    validation_data=get_chess_training_positions(Const.VALIDATIONDATADIR, True),
+    validation_data=get_chess_training_positions(Const.VALIDATIONDATADIR, validationset=True),
     validation_steps=VALIDATIONSTEPS,
     class_weight=None,
     max_queue_size=1000,
     workers=1,
     use_multiprocessing=False,
     initial_epoch=0 )
-
