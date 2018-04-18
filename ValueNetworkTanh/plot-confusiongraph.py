@@ -10,8 +10,8 @@ import pickle
 import os
 import sys
 
-if len(sys.argv)>3:
-    print("Print the confusion graph using validation samples")
+if len(sys.argv)<2:
+    print("Plot the confusion graph using validation samples")
     print("Usage: "+sys.argv[0]+" [<numsamples> [<modelfile>]]")
     exit(1)
 
