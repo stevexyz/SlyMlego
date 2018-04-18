@@ -21,6 +21,7 @@ from keras.layers import Conv2D
 from keras.layers import AveragePooling2D
 from keras.layers import GlobalAveragePooling2D
 from keras.layers import BatchNormalization
+from keras.layers import ELU
 from keras.layers import LeakyReLU
 from keras.layers import merge
 from keras.layers import add
@@ -151,7 +152,7 @@ else:
 
     def normalization_and_activation(y):
         y = BatchNormalization(axis=-1)(y)
-        y = LeakyReLU()(y)
+        y = ELU()(y) # LeakyReLU()(y)
         return y
 
     def residual_block(y, nb_channels_in, nb_channels_out, strides=(1, 1), _project_shortcut=False):
@@ -201,11 +202,25 @@ else:
     network = Activation("tanh")(network)
     model = Model(inputs=[input_tensor], outputs=[network])
 
+    def rmse(y_true, y_pred):
+        return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
+
     # add loss function and optimizer
     model.compile(
-        loss='mean_squared_error', # accuracy, mean_squared_logarithmic_error, mean_squared_error
-        optimizer='nadam',
-        metrics=['accuracy']) # just add some metric display to the loss one
+        loss='mean_squared_error', # mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
+                                   # squared_hinge, hinge, logcosh, categorical_hinge, 
+                                   # categorical_crossentropy, sparse_categorical_crossentropy, binary_crossentropy,
+                                   # kullback_leibler_divergence, poisson, cosine_proximity
+        optimizer='nadam', # SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+                           # RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
+                           # Adagrad(lr=0.01, epsilon=None, decay=0.0)
+                           # Adadelta(lr=1.0, rho=0.95, epsilon=None, decay=0.0)
+                           # Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+                           # Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
+                           # Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
+        metrics=["mse", "mae", "mape", "cosine", rmse # mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, cosine_proximity, root_mean_squared_error
+                 # binary_accuracy, categorical_accuracy, sparse_categorical_accuracy, top_k_categorical_accuracy(k), sparse_top_k_categorical_accuracy(k)
+                ])
 
     #@modelend
 
