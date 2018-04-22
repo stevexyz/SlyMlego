@@ -33,9 +33,14 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     if numsamples<=0: break
     (epd, X, Y) = pickle.load(open(file, "rb"))
     val = eval.EvaluatePosition(epd)[0] # model evaluation
-    xcoords.append(Y[0])
     ycoords.append(val)
-    print(epd+": "+str(Y[0])+" | "+str(val))
+    if Y[0] < -Const.INFINITECP:
+        xcoords.append(-Const.INFINITECP)
+    elif Y[0] > Const.INFINITECP:
+        xcoords.append(Const.INFINITECP)
+    else:
+        xcoords.append(Y[0])
+    print(file+" "+epd+" sf:"+str(Y[0])+" nn:"+str(val))
     
 #plt.plot([-10000,10000],[0,0])
 #plt.plot([0,0],[-10000,10000])
@@ -48,9 +53,9 @@ plt.plot(xcoords,ycoords,"ro")
 plt.grid(True)
 plt.axes().set_aspect('equal')
 
-plt.ylabel('model eval')
-plt.xlabel('true eval')
-plt.title('"Confusion graph" of model evaluations')
+plt.ylabel('ann model eval')
+plt.xlabel('std engine eval')
+plt.title('"Confusion plot" of model evaluations')
 
 plt.show()
 

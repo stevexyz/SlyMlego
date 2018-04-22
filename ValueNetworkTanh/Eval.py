@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 import Const
 from keras.models import Sequential
 from keras.layers import Dense
@@ -16,7 +17,7 @@ class Eval:
 
     def __init__(self, modelfile=Const.MODELFILE+".hdf5", openingbookfile=None, tablebases=None):
         self.model = load_model(modelfile)
-        print("Model "+modelfile+" loaded")
+        sys.stderr.write("Model "+modelfile+" loaded")
         #if openingbook != None: self.openingbook = chess.polyglot.open_reader(openingbookfile)
 
     def EvaluatePositionB(self, board):

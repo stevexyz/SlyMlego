@@ -43,7 +43,7 @@ while True:
         print('readyok')
 
     elif parts[0] == 'ucinewgame':
-        board = Board()
+        board = chess.Board()
 
     elif parts[0] == 'position':
         is_moves = False
@@ -71,9 +71,8 @@ while True:
                 val = -999999999 # ensure to follow up
             else:
                 val = eval.EvaluatePositionB(board)[0]
-            #print("M: "+str(m)+" V:"+str(val))
+            print("info currmove "+str(m)+" score "+str(-val))
             if val<bestval: # minimum value for adversary
-                #print("BV: "+str(bestval)+" V:"+str(val))
                 bestmove = m
                 bestval = val
             board.pop()

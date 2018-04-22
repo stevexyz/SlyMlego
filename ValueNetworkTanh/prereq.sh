@@ -7,7 +7,3 @@ mkdir __validationdata
 ./PrepareInput.py sts.epd 1400
 ./mv-tovalidation.py
 
-
-
-
-
