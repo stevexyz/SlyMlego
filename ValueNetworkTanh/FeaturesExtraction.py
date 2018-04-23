@@ -26,7 +26,7 @@ def fen_invert_position(fenstring):
                   else v[3][0].lower()+str(9-int(v[3][1])))
 
 
-def bitCount(int_type):
+def bitCount(int_type): # TODO: optimize with chess.popcount
     count = 0
     while (int_type):
         int_type &= int_type - 1
