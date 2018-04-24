@@ -118,4 +118,5 @@ LOCAL*/
 *.Bak
 *.BAK
 __*
+*.debug
 

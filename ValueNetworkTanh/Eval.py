@@ -21,15 +21,16 @@ class Eval:
         #if openingbook != None: self.openingbook = chess.polyglot.open_reader(openingbookfile)
 
     def EvaluatePositionB(self, board):
-        sign = 1
         # evaluations are always done on white side
-        if board.turn == chess.BLACK:
+        if board.turn == chess.WHITE:
+            sign = 1
+        else:
             board = board.mirror()
             sign = -1
         # evaluate position
         X = np.array([fe.extract_features(board)])
         Y = self.model.predict(X, batch_size=1, verbose=0)
-        return sign * Y[0] * Const.INFINITECP
+        return sign * Y[0] * Const.INFINITECP # adjust tanh value to max possible
 
     def EvaluatePosition(self, fenstring):
         epdposition = fenstring

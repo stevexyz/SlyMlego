@@ -1,0 +1,569 @@
+
+4.1 Chess Engine Options
+
+-tc or -timeControl minutes[:seconds]
+    Each player begins with his clock set to the timeControl period. Default: 5 minutes. The additional options movesPerSession and timeIncrement are mutually exclusive.
+-mps or -movesPerSession moves
+    When both players have made movesPerSession moves, a new timeControl period is added to both clocks. Default: 40 moves.
+-inc or -timeIncrement seconds
+    If this option is specified, movesPerSession is ignored. Instead, after each player's move, timeIncrement seconds are added to his clock. Use ‘-inc 0’ if you want to require the entire game to be played in one timeControl period, with no increment. Default: -1, which specifies movesPerSession mode.
+-clock/-xclock or -clockMode true/false
+    Determines whether or not to display the chess clocks. If clockMode is false, the clocks are not shown, but the side that is to play next is still highlighted. Also, unless searchTime is set, the chess engine still keeps track of the clock time and uses it to determine how fast to make its moves.
+-st or -searchTime minutes[:seconds]
+    Tells the chess engine to spend at most the given amount of time searching for each of its moves. Without this option, the chess engine chooses its search time based on the number of moves and amount of time remaining until the next time control. Setting this option also sets clockMode to false.
+-depth or -searchDepth number
+    Tells the chess engine to look ahead at most the given number of moves when searching for a move to make. Without this option, the chess engine chooses its search depth based on the number of moves and amount of time remaining until the next time control. With the option, the engine will cut off its search early if it reaches the specified depth.
+-firstNPS number
+-secondNPS number
+    Tells the chess engine to use an internal time standard based on its node count, rather then wall-clock time, to make its timing decisions. The time in virtual seconds should be obtained by dividing the node count through the given number, like the number was a rate in nodes per second. Xboard will manage the clocks in accordance with this, relying on the number of nodes reported by the engine in its thinking output. If the given number equals zero, it can obviously not be used to convert nodes to seconds, and the time reported by the engine is used to decrement the XBoard clock in stead. The engine is supposed to report in CPU time it uses, rather than wall-clock time, in this mode. This option can provide fairer conditions for engine-engine matches on heavily loaded machines, or with very fast games (where the wall clock is too inaccurate). showThinking must be on for this option to work. Default: -1 (off). Not many engines might support this yet!
+-firstTimeOdds factor
+-secondTimeOdds factor
+    Reduces the time given to the mentioned engine by the given factor. If pondering is off, the effect is indistinguishable from what would happen if the engine was running on an n-times slower machine. Default: 1.
+-timeOddsMode mode
+    This option determines how the case is handled where both engines have a time-odds handicap. If mode=1, the engine that gets the most time will always get the nominal time, as specified by the time-control options, and its opponent's time is renormalized accordingly. If mode=0, both play with reduced time. Default: 0.
+-hideThinkingFromHuman true/false
+    Controls the Hide Thinking option. See Options Menu. Default: true. (Replaces the Show-Thinking option of older xboard versions.)
+-thinking/-xthinking or -showThinking true/false
+    Forces the engine to send thinking output to xboard. Used to be the only way to control if thinking output was displayed in older xboard versions, but as the thinking output in xboard 4.3 is also used for several other purposes (adjudication, storing in PGN file) the display of it is now controlled by the new option Hide Thinking. See Options Menu. Default: false. (But if xboard needs the thinking output for some purpose, it makes the engine send it despite the setting of this option.)
+-ponder/-xponder or -ponderNextMove true/false
+    Sets the Ponder Next Move menu option. See Options Menu. Default: true.
+-smpCores number
+    Specifies the maximum number of CPUs an SMP engine is allowed to use. Only works for engines that support the XBoard/WinBoard-protocol cores feature.
+-mg or -matchGames n
+    Automatically runs an n-game match between two chess engines, with alternating colors. If the loadGameFile or loadPositionFile option is set, XBoard starts each game with the given opening moves or the given position; otherwise, the games start with the standard initial chess position. If the saveGameFile option is set, a move record for the match is appended to the specified file. If the savePositionFile option is set, the final position reached in each game of the match is appended to the specified file. When the match is over, XBoard displays the match score and exits. Default: 0 (do not run a match).
+-mm/-xmm or -matchMode true/false
+    Setting matchMode to true is equivalent to setting matchGames to 1.
+-sameColorGames n
+    Automatically runs an n-game match between two chess engines, without alternating colors. Otherwise the same applies as for the ‘-matchGames’ option, over which it takes precedence if both are specified. (See there.) Default: 0 (do not run a match).
+-fcp or -firstChessProgram program
+    Name of first chess engine. Default: Fairy-Max.
+-scp or -secondChessProgram program
+    Name of second chess engine, if needed. A second chess engine is started only in Two Machines (match) mode. Default: Fairy-Max.
+-fe or -firstEngine nickname
+    This is an alternative to the fcp option for specifying the first engine, for engines that were already configured (using the ‘Load Engine’ dialog) in XBoard's settings file. It will not only retrieve the real name of the engine, but also all options configured with it. (E.g. if it is UCI, whether it should use book.)
+-se or -secondEngine nickname
+    As fe, but for the second engine.
+-fb/-xfb or -firstPlaysBlack true/false
+    In games between two chess engines, firstChessProgram normally plays white. If this option is true, firstChessProgram plays black. In a multi-game match, this option affects the colors only for the first game; they still alternate in subsequent games.
+-fh or -firstHost host
+-sh or -secondHost host
+    Hosts on which the chess engines are to run. The default for each is localhost. If you specify another host, XBoard uses rsh to run the chess engine there. (You can substitute a different remote shell program for rsh using the remoteShell option described below.)
+-fd or -firstDirectory dir
+-sd or -secondDirectory dir
+    Working directories in which the chess engines are to be run. The default is "", which means to run the chess engine in the same working directory as XBoard itself. (See the CHESSDIR environment variable.) This option is effective only when the chess engine is being run on the local host; it does not work if the engine is run remotely using the -fh or -sh option.
+-initString string or -firstInitString
+-secondInitString string
+    The string that is sent to initialize each chess engine for a new game. Default:
+
+              new
+              random
+
+    Setting this option from the command line is tricky, because you must type in real newline characters, including one at the very end. In most shells you can do this by entering a ‘\’ character followed by a newline. Using the character sequence ‘\n’ in the string should work too, though.
+
+    If you change this option, don't remove the ‘new’ command; it is required by all chess engines to start a new game.
+
+    You can remove the ‘random’ command if you like; including it causes GNU Chess 4 to randomize its move selection slightly so that it doesn't play the same moves in every game. Even without ‘random’, GNU Chess 4 randomizes its choice of moves from its opening book. Many other chess engines ignore this command entirely and always (or never) randomize.
+
+    You can also try adding other commands to the initString; see the documentation of the chess engine you are using for details.
+-firstComputerString string
+-secondComputerString string
+    The string that is sent to the chess engine if its opponent is another computer chess engine. The default is ‘computer\n’. Probably the only useful alternative is the empty string (‘’), which keeps the engine from knowing that it is playing another computer.
+-reuse/-xreuse or -reuseFirst true/false
+-reuse2/-xreuse2 or -reuseSecond true/false
+    If the option is false, XBoard kills off the chess engine after every game and starts it again for the next game. If the option is true (the default), XBoard starts the chess engine only once and uses it repeatedly to play multiple games. Some old chess engines may not work properly when reuse is turned on, but otherwise games will start faster if it is left on.
+-firstProtocolVersion version-number
+-secondProtocolVersion version-number
+    This option specifies which version of the chess engine communication protocol to use. By default, version-number is 2. In version 1, the "protover" command is not sent to the engine; since version 1 is a subset of version 2, nothing else changes. Other values for version-number are not supported.
+-firstScoreAbs true/false
+-secondScoreAbs true/false
+    If this option is set, the score reported by the engine is taken to be that in favor of white, even when the engine plays black. Important when XBoard uses the score for adjudications, or in PGN reporting.
+-niceEngines priority
+    This option allows you to lower the priority of the engine processes, so that the generally insatiable hunger for CPU time of chess engines does not interfere so much with smooth operation of XBoard (or the rest of your system). Negative values could increase the engine priority, which is not recommended.
+-firstOptions string
+-secondOptions string
+    The given string is a comma-separated list of (option name=option value) pairs, like the following example: "style=Karpov,blunder rate=0". If an option announced by the engine at startup through the feature commands of the XBoard/WinBoard protocol matches one of the option names (i.e. "style" or "blunder rate"), it would be set to the given value (i.e. "Karpov" or 0) through a corresponding option command to the engine. This provided that the type of the value (text or numeric) matches as well.
+-firstNeedsNoncompliantFEN string
+-secondNeedsNoncompliantFEN string
+    The castling rights and e.p. fields of the FEN sent to the mentioned engine with the setboard command will be replaced by the given string. This can for instance be used to run engines that do not understand Chess960 FENs in variant fischerandom, to make them at least understand the opening position, through setting the string to "KQkq -". (Note you also have to give the e.p. field!) Other possible applications are to provide work-arounds for engines that want to see castling and e.p. fields in variants that do not have castling or e.p. (shatranj, courier, xiangqi, shogi) so that XBoard would normally omit them (string = "- -"), or to add variant-specific fields that are not yet supported by XBoard (e.g. to indicate the number of checks in 3check).
+-shuffleOpenings
+    Forces shuffling of the opening setup in variants that normally have a fixed initial position. Shufflings are symmetric for black and white, and exempt King and Rooks in variants with normal castling. Remains in force until a new variant is selected. 
+
+
+4.2 UCI + WB Engine Settings
+
+-fUCI or -firstIsUCI true/false
+-sUCI or -secondIsUCI true/false
+    Indicates if the mentioned engine executable file is an UCI engine, and should be run with the aid of the Polyglot adapter rather than directly. Xboard will then pass the other UCI options and engine name to Polyglot on its command line, according to the option adapterCommand.
+-fUCCI
+-sUCCI
+-fUSI
+-sUSI
+    Options similar to fUCI and sUCI, except that they use the indicated engine with the protocol adapter specified in the ‘uxiAdapter’ option. This can then be configured for running an UCCI or USI adapter, as the need arises.
+-adapterCommand string
+    The string conatins the command that should be issued by XBoard to start an engine that is accompanied by the fUCI option. Any identifier following a percent sign in the command (e.g. %fcp) will be considered the name of an XBoard option, and be replaced by the value of that option at the time the engine is started. For starting the second engine, any leading "f" or "first" in the option name will first be replaced by "s" or "second", before finding its value. Default: 'polyglot -noini -ec "%fcp" -ed "%fd"'
+-uxiAdapter string
+    Similar to adapterCommand, but used for engines accompanied by the fUCCI or fUSI option, so you can configure XBoard to be ready to handle more than one flavor of non-native protocols. Default: ""
+-polyglotDir filename
+    Gives the name of the directory in which the Polyglot adapter for UCI engines resides. Default: "".
+-usePolyglotBook true/false
+    Specifies if the Polyglot book should be used as GUI book.
+-polyglotBook filename
+    Gives the filename of the opening book. The book is only used when the usePolyglotBook option is set to true, and the option firstHasOwnBookUCI or secondHasOwnBookUCI applying to the engine is set to false. The engine will be kept in force mode as long as the current position is in book, and XBoard will select the book moves for it. Default: "".
+-fNoOwnBookUCI or -firstXBook or -firstHasOwnBookUCI true/false
+-sNoOwnBookUCI or -secondXBook or -secondHasOwnBookUCI true/false
+    Indicates if the mentioned engine has its own opening book it should play from, rather than using the external book through XBoard. Default: depends on setting of the option discourageOwnBooks.
+-discourageOwnBooks true/false
+    When set, newly loaded engines will be assumed to use the GUI book, unless they explicitly specify differently. Otherwise they will be assumed to not use the GUI book, unless the specify differently (e.g. with firstXBook). Default: false.
+-bookDepth n
+    Limits the use of the GUI book to the first n moves of each side. Default: 12.
+-bookVariation n
+    A value n from 0 to 100 tunes the choice of moves from the GUI books from totally random to best-only. Default: 50
+-mcBookMode
+    When this volatile option is specified, the probing algorithm of the GUI book is altered to always select the move that is most under-represented based on its performance. When all moves are played in approximately the right proportion, a book miss will be reported, to give the engine opportunity to explore a new move. In addition score of the moves will be kept track of during the session in a book buffer. By playing an match in this mode, a book will be built from scratch. The only output are the saved games, which can be converted to an actual book later, with the ‘Save Games as Book’ command. This command can also be used to pre-fill the book buffer before adding new games based on the probing algorithm.
+-fn string or -firstPgnName string
+-sn string or -secondPgnName string
+    Indicates the name that should be used for the engine in PGN tags of engine-engine games. Intended to allow you to install verions of the same engine with different settings, and still distinguish them. Default: "".
+-defaultHashSize n
+    Sets the size of the hash table to n MegaBytes. Together with the EGTB cache size this number is also used to calculate the memory setting of XBoard/WinBoard engines, for those that support the memory feature of the XBoard/WinBoard protocol. Default: 64.
+-defaultCacheSizeEGTB n
+    Sets the size of the EGTB cache to n MegaBytes. Together with the hash-table size this number is also used to calculate the memory setting of XBoard/WinBoard engines, for those that support the memory feature of the XBoard/WinBoard protocol. Default: 4.
+-defaultPathEGTB filename
+    Gives the name of the directory where the end-game tablebases are installed, for UCI engines. Default: "/usr/local/share/egtb".
+-egtFormats string
+    Specifies which end-game tables are installed on the computer, and where. The argument is a comma-separated list of format specifications, each specification consisting of a format name, a colon, and a directory path name, e.g. "nalimov:/usr/local/share/egtb". If the name part matches that of a format that the engine requests through a feature command, xboard will relay the path name for this format to the engine through an egtpath command. One egtpath command for each matching format will be sent. Popular formats are "nalimov" DTM tablebases and "scorpio" bitbases. Default: "".
+-firstChessProgramNames={names}
+    This option lets you customize the drop-down list of chess engine names that appears in the ‘Load Engine’ and ‘Match Options’ dialog. It consists of a list of strings, one per line. When an engine is loaded, the corresponding line is prefixed with "-fcp ", and processed like it appeared on the command line. That means that apart from the engine command, it can contain any list of XBoard options you want to use with this engine. (Commonly used options here are -fd, -firstXBook, -fUCI, -variant.)
+
+    The value of this option is gradually built as you load new engines through the ‘Load Engine’ menu dialog, with ‘Add to list’ ticked. To change it, edit your settings file with a plain text editor. 
+
+
+4.4 ICS options
+
+-ics/-xics or -internetChessServerMode true/false
+    Connect with an Internet Chess Server to play chess against its other users, observe games they are playing, or review games that have recently finished. Default: false.
+-icshost or -internetChessServerHost host
+    The Internet host name or address of the chess server to connect to when in ICS mode. Default: chessclub.com. Another popular chess server to try is freechess.org. If your site doesn't have a working Internet name server, try specifying the host address in numeric form. You may also need to specify the numeric address when using the icshelper option with timestamp or timeseal (see below).
+-icsport or -internetChessServerPort port-number
+    The port number to use when connecting to a chess server in ICS mode. Default: 5000.
+-icshelper or -internetChessServerHelper prog-name
+    An external helper program used to communicate with the chess server. You would set it to "timestamp" for ICC (chessclub.com) or "timeseal" for FICS (freechess.org), after obtaining the correct version of timestamp or timeseal for your computer. See "help timestamp" on ICC and "help timeseal" on FICS. This option is shorthand for -useTelnet -telnetProgram program.
+-telnet/-xtelnet or -useTelnet true/false
+    This option is poorly named; it should be called useHelper. If set to true, it instructs XBoard to run an external program to communicate with the Internet Chess Server. The program to use is given by the telnetProgram option. If the option is false (the default), XBoard opens a TCP socket and uses its own internal implementation of the telnet protocol to communicate with the ICS. See Firewalls.
+-telnetProgram prog-name
+    This option is poorly named; it should be called helperProgram. It gives the name of the telnet program to be used with the gateway and useTelnet options. The default is telnet. The telnet program is invoked with the value of internetChessServerHost as its first argument and the value of internetChessServerPort as its second argument. See Firewalls.
+-gateway host-name
+    If this option is set to a host name, XBoard communicates with the Internet Chess Server by using rsh to run the telnetProgram on the given host, instead of using its own internal implementation of the telnet protocol. You can substitute a different remote shell program for rsh using the remoteShell option described below. See Firewalls.
+-internetChessServerCommPort or -icscomm dev-name
+    If this option is set, XBoard communicates with the ICS through the given character I/O device instead of opening a TCP connection. Use this option if your system does not have any kind of Internet connection itself (not even a SLIP or PPP connection), but you do have dial-up access (or a hardwired terminal line) to an Internet service provider from which you can telnet to the ICS.
+
+    The support for this option in XBoard is minimal. You need to set all communication parameters and tty modes before you enter XBoard.
+
+    Use a script something like this:
+
+              stty raw -echo 9600 > /dev/tty00
+              xboard -ics -icscomm /dev/tty00
+
+    Here replace ‘/dev/tty00’ with the name of the device that your modem is connected to. You might have to add several more options to these stty commands. See the man pages for stty and tty if you run into problems. Also, on many systems stty works on its standard input instead of standard output, so you have to use ‘<’ instead of ‘>’.
+
+    If you are using linux, try starting with the script below. Change it as necessary for your installation.
+
+              #!/bin/sh -f
+              # configure modem and fire up XBoard
+              
+              # configure modem
+              (
+                stty 2400 ; stty raw ; stty hupcl ; stty -clocal
+                stty ignbrk ; stty ignpar ; stty ixon ; stty ixoff
+                stty -iexten ; stty -echo
+              ) < /dev/modem
+              xboard -ics -icscomm /dev/modem
+
+    After you start XBoard in this way, type whatever commands are necessary to dial out to your Internet provider and log in. Then telnet to ICS, using a command like telnet chessclub.com 5000. Important: See the paragraph below about extra echoes, in Limitations.
+-icslogon or -internetChessServerLogonScript file-name
+    Whenever XBoard connects to the Internet Chess Server, if it finds a file with the name given in this option, it feeds the file's contents to the ICS as commands. The default file name is .icsrc. Usually the first two lines of the file should be your ICS user name and password. The file can be either in $CHESSDIR, in XBoard's working directory if CHESSDIR is not set, or in your home directory.
+-msLoginDelay delay
+    If you experience trouble logging on to an ICS when using the -icslogon option, inserting some delay between characters of the logon script may help. This option adds delay milliseconds of delay between characters. Good values to try are 100 and 250.
+-icsinput/-xicsinput or -internetChessServerInputBox true/false
+    Sets the ICS Input Box menu option. See Mode Menu. Default: false.
+-autocomm/-xautocomm or -autoComment true/false
+    Sets the Auto Comment menu option. See Options Menu. Default: false.
+-autoflag/-xautoflag or -autoCallFlag true/false
+    Sets the Auto Flag menu option. See Options Menu. Default: false.
+-autobs/-xautobs or -autoObserve true/false
+    Sets the Auto Observe menu option. See Options Menu. Default: false.
+-autoKibitz
+    Enables kibitzing of the engines last thinking output (depth, score, time, speed, PV) before it moved to the ICS, in zippy mode. The option showThinking must be switched on for this option to work. Also diverts similar kibitz information of an opponent engine that is playing you through the ICS to the engine-output window, as if the engine was playing locally.
+-seekGraph true/false or -sg
+    Enables displaying of the seek graph by left-clicking the board when you are logged on to an ICS and currently idle. The seek graph show all players currently seeking games on the ICS, plotted according to their rating and the time control of the game they seek, in three different colors (for rated, unrated and wild games). Computer ads are displayed as squares, human ads are dots. Default: false.
+-autoRefresh true/false
+    Enables automatic updating of the seek graph, by having the ICS send a running update of all newly placed and removed seek ads. This consumes a substantial amount of communication bandwidth, and is only supported for FICS and ICC. Default: false.
+-backgroundObserve true/false
+    When true, boards sent to you by the ICS from other games while you are playing (e.g. because you are observing them) will not be automatically displayed. Only a summary of time left and material of both players will appear in the message field above the board. XBoard will remember the last board it has received this way, and will display it in stead of the position in your own game when you press the right mouse button. No other information is stored on such games observed in the background; you cannot save such a game later, or step through its moves. This feature is provided solely for the benefit of bughouse players, to enable them to peek at their partner's game without the need to logon twice. Default: false.
+-dualBoard true/false
+    In combination with -backgroundObserve true, this option will display the board of the background game side by side with that of your own game, so you can have it in view permanently. Any board or holdings info coming in will be displayed on the secondary board immediately. This feature is still experimental and largely unfinished. There is no animation or highlighting of moves on the secondary board. Default: false.
+-disguisePromotedPieces true/false
+    When set promoted Pawns in crazyhouse/bughouse are displayed identical to primordial pieces of the same type, rather than distinguishable. Default: true.
+-moves/-xmoves or -getMoveList true/false
+    Sets the Get Move List menu option. See Options Menu. Default: true.
+-alarm/-xalarm or -icsAlarm true/false
+    Sets the ICS Alarm menu option. See Options Menu. Default: true.
+-icsAlarmTime ms
+    Sets the time in milliseconds for the ICS Alarm menu option. See Options Menu. Default: 5000.
+lowTimeWarning true/false
+    Controls a color change of the board as a warning your time is running out. See Options Menu. Default: false.
+-pre/-xpre \fRor\fB -premove true/false
+    Sets the Premove menu option. See Options Menu. Default: true.
+-prewhite/-xprewhite or -premoveWhite
+-preblack/-xpreblack or -premoveBlack
+-premoveWhiteText string
+-premoveBlackText string
+    Set the menu options for specifying the first move for either color. See Options Menu. Defaults: false and empty strings, so no pre-moves.
+-quiet/-xquiet or -quietPlay true/false
+    Sets the Quiet Play menu option. See Options Menu. Default: false.
+-colorizeMessages or -colorize/-xcolorize
+    Setting colorizeMessages to true tells XBoard to colorize the messages received from the ICS. Colorization works only if your xterm supports ISO 6429 escape sequences for changing text colors. Default: true.
+-colorShout foreground,background,bold
+-colorSShout foreground,background,bold
+-colorCShout foreground,background,bold
+-colorChannel1 foreground,background,bold
+-colorChannel foreground,background,bold
+-colorKibitz foreground,background,bold
+-colorTell foreground,background,bold
+-colorChallege foreground,background,bold
+-colorRequest foreground,background,bold
+-colorSeek foreground,background,bold
+-colorNormal foreground,background,bold
+    These options set the colors used when colorizing ICS messages. All ICS messages are grouped into one of these categories: shout, sshout, channel 1, other channel, kibitz, tell, challenge, request (including abort, adjourn, draw, pause, and takeback), or normal (all other messages).
+
+    Each foreground or background argument can be one of the following: black, red, green, yellow, blue, magenta, cyan, white, or default. Here “default” means the default foreground or background color of your xterm. Bold can be 1 or 0. If background is omitted, “default” is assumed; if bold is omitted, 0 is assumed.
+-soundProgram progname
+    If this option is set to a sound-playing program that is installed and working on your system, XBoard can play sound files when certain events occur, listed below. The default program name is "play". If any of the sound options is set to "$", the event rings the terminal bell by sending a ^G character to standard output, instead of playing a sound file. If an option is set to the empty string "", no sound is played for that event.
+-soundDirectory directoryname
+    This option specifies where XBoard will look for sound files, when these are not given as an absolute path name.
+-soundShout filename
+-soundSShout filename
+-soundCShout filename
+-soundChannel filename
+-soundChannel1 filename
+-soundKibitz filename
+-soundTell filename
+-soundChallenge filename
+-soundRequest filename
+-soundSeek filename
+    These sounds are triggered in the same way as the colorization events described above. They all default to "", no sound. They are played only if the colorizeMessages is on. CShout is synonymous with SShout.
+-soundMove filename
+    This sound is used by the Move Sound menu option. Default: "$".
+-soundIcsAlarm filename
+    This sound is used by the ICS Alarm menu option. Default: "$".
+-soundIcsWin filename
+    This sound is played when you win an ICS game. Default: "" (no sound).
+-soundIcsLoss filename
+    This sound is played when you lose an ICS game. Default: "" (no sound).
+-soundIcsDraw filename
+    This sound is played when you draw an ICS game. Default: "" (no sound).
+-soundIcsUnfinished filename
+    This sound is played when an ICS game that you are participating in is aborted, adjourned, or otherwise ends inconclusively. Default: "" (no sound). 
+
+
+4.5 Load and Save options
+
+-lgf or -loadGameFile file
+-lgi or -loadGameIndex index
+    If the loadGameFile option is set, XBoard loads the specified game file at startup. The file name - specifies the standard input. If there is more than one game in the file, XBoard pops up a menu of the available games, with entries based on their PGN (Portable Game Notation) tags. If the loadGameIndex option is set to ‘N’, the menu is suppressed and the N th game found in the file is loaded immediately. The menu is also suppressed if matchMode is enabled or if the game file is a pipe; in these cases the first game in the file is loaded immediately. Use the pxboard shell script provided with XBoard if you want to pipe in files containing multiple games and still see the menu. If the loadGameIndex specifies an index -1, this triggers auto-increment of the index in matchMode, which means that after every game the index is incremented by one, causing each game of the match to be played from the next game in the file. Similarly, specifying an index value of -2 causes the index to be incremented every two games, so that each game in the file is used twice (with reversed colors). The rewindIndex option causes the index to be reset to the first game of the file when it has reached a specified value.
+-rewindIndex n
+    Causes a position file or game file to be rewound to its beginning after n positions or games in auto-increment matchMode. See loadPositionIndex and loadGameIndex. default: 0 (no rewind).
+-td or -timeDelay seconds
+    Time delay between moves during ‘Load Game’ or ‘Analyze File’. Fractional seconds are allowed; try ‘-td 0.4’. A time delay value of -1 tells XBoard not to step through game files automatically. Default: 1 second.
+-sgf or -saveGameFile file
+    If this option is set, XBoard appends a record of every game played to the specified file. The file name - specifies the standard output.
+-autosave/-xautosave or -autoSaveGames true/false
+    Sets the Auto Save menu option. See Options Menu. Default: false. Ignored if saveGameFile is set.
+-onlyOwnGames true/false
+    Suppresses auto-saving of ICS observed games. Default: false.
+-lpf or -loadPositionFile file
+-lpi or -loadPositionIndex index
+    If the loadPositionFile option is set, XBoard loads the specified position file at startup. The file name - specifies the standard input. If the loadPositionIndex option is set to N, the Nth position found in the file is loaded; otherwise the first position is loaded. If the loadPositionIndex specifies an index -1, this triggers auto-increment of the index in matchMode, which means that after every game the index is incremented by one, causing each game of the match to be played from the next position in the file. Similarly, specifying an index value of -2 causes the index to be incremented every two games, so that each position in the file is used twice (with the engines playing opposite colors). The rewindIndex option causes the index to be reset to the first position of the file when it has reached a specified value.
+-spf or -savePositionFile file
+    If this option is set, XBoard appends the final position reached in every game played to the specified file. The file name - specifies the standard output.
+-pgnExtendedInfo true/false
+    If this option is set, XBoard saves depth, score and time used for each move that the engine found as a comment in the PGN file. Default: false.
+-pgnEventHeader string
+    Sets the name used in the PGN event tag to string. Default: "Computer Chess Game".
+-pgnNumberTag true/false
+    Include the (unique) sequence number of a tournament game into the saved PGN file as a 'number' tag. Default: false.
+-saveOutOfBookInfo true/false
+    Include the information on how the engine(s) game out of its opening book in a special 'annotator' tag with the PGN file. Default: true.
+-oldsave/-xoldsave or -oldSaveStyle true/false
+    Sets the Old Save Style menu option. See Options Menu. Default: false.
+-gameListTags string
+    The character string lists the PGN tags that should be printed in the Game List, and their order. The meaning of the codes is e=event, s=site, d=date, o=round, p=players, r=result, w=white Elo, b=black Elo, t=time control, v=variant, a=out-of-book info, c=result comment. Default: "eprd"
+-ini or -settingsFile filename
+-saveSettingsFile filename
+@filename
+    When XBoard encounters an option -settingsFile (or -ini for short), or @filename, it tries to read the mentioned file, and substitutes the contents of it (presumaby more command-line options) in place of the option. In the case of -ini or -settingsFile, the name of a successfully read settings file is also remembered as the file to use for saving settings (automatically on exit, or on user command). An option of the form @filename does not affect saving. The option -saveSettingsFile does specify a name of the file to use for saving, without reading any options from it, and is thus also effective when the file did not exist yet. So the settings will be saved to the file specified in the last -saveSettingsFile or succesfull -settingsFile / -ini command, if any, and in /etc/xboard/xboard.conf otherwise. Usualy the latter is only accessible for the system administrator, though, and will be used to contain system-wide default setings, amongst which a -saveSettingsFile and -settingsFile options to specify a settings file accessible to the individual user, such as ~/.xboardrc in the user's home directory.
+-saveSettingsOnExit true/false
+    Controls saving of options on the settings file. See Options Menu. Default: true. 
+
+
+4.6 User interface options
+
+-display
+-geometry
+-iconic
+-name
+    These and most other standard Xt options are accepted.
+-noGUI
+    Suppresses all GUI functions of XBoard (to speed up automated ultra-fast engine-engine games, which you don't want to watch). There will be no board or clock updates, no printing of moves, and no update of the icon on the task bar in this mode.
+-logoSize N
+    This option controls the drawing of player logos next to the clocks. The integer N specifies the width of the logo in pixels; the logo height will always be half the width. When N = 0, no logos will be diplayed. Default: 0.
+-firstLogo imagefile
+-secondLogo imagefile
+    Specify the images to be used as player logos when logoSize is non-zero, next to the white and black clocks, respectively.
+-autoLogo true/false
+-logoDir filename
+    When autoLogo is set, XBoard will search for a PNG image file with the name of the engine or ICS in the directory specified by logoDir.
+-recentEngines number
+-recentEngineList list
+    When the number is larger than zero, it determines how many recently used engines will be appended at the bottom of the ‘Engines’ menu. The engines will be saved in your settings file as the option recentEngineList, by their nicknames, and the most recently used one will always be sorted to the top. If the list after that is longer than the specified number, the last one is discarded. Changes in the list will only become visible the next session, provided you saved the settings. Default: 6.
+-autoInstall list
+    When the list is set to a non-empty string, XBoard will scan the operating system's plugin directory for engines supporting UCI and XBoard protocol at startup. When it finds an engine that was installed after it last saved its settings, a line to launch that engine (as per specs in the plugin file) is appended to the -firstChessProgramNames list of installed engines. In the future it will be possible to use the list to limit this automatic adding of engines to a certain types of variants.
+-oneClickMove true/false
+    When set, this option allows you to enter moves by only clicking the to- or from-square, when only a single legal move to or from that square is possible. Double-clicking a piece (or clicking an already selected piece) will instruct that piece to make the only capture it can legally do. Default: false.
+-movesound/-xmovesound or -ringBellAfterMoves true/false
+    Sets the Move Sound menu option. See Options Menu. Default: false. For compatibility with old XBoard versions, -bell/-xbell are also accepted as abbreviations for this option.
+-exit/-xexit or -popupExitMessage true/false
+    Sets the Popup Exit Message menu option. See Options Menu. Default: true.
+-popup/-xpopup or -popupMoveErrors true/false
+    Sets the Popup Move Errors menu option. See Options Menu. Default: false.
+-queen/-xqueen or -alwaysPromoteToQueen true/false
+    Sets the Always Queen menu option. See Options Menu. Default: false.
+-sweepPromotions true/false
+    Sets the ‘Almost Always Promote to Queen’ menu option. See Options Menu. Default: false.
+-legal/-xlegal or -testLegality true/false
+    Sets the Test Legality menu option. See Options Menu. Default: true.
+-size or -boardSize (sizeName | n1,n2,n3,n4,n5,n6,n7)
+    Determines how large the board will be, by selecting the pixel size of the pieces and setting a few related parameters. The sizeName can be one of: Titanic, giving 129x129 pixel pieces, Colossal 116x116, Giant 108x108, Huge 95x95, Big 87x87, Large 80x80, Bulky 72x72, Medium 64x64, Moderate 58x58, Average 54x54, Middling 49x49, Mediocre 45x45, Small 40x40, Slim 37x37, Petite 33x33, Dinky 29x29, Teeny 25x25, or Tiny 21x21. Xboard installs with a set of scalable (svg) piece images, which it scales to any of the requested sizes. The square size can further be continuously scaled by sizing the board window, but this only adapts the size of the pieces, and has no effect on the width of the grid lines or the font choice (both of which would depend on he selected boardSize). The default depends on the size of your screen; it is approximately the largest size that will fit without clipping.
+
+    You can select other sizes or vary other layout parameters by providing a list of comma-separated values (with no spaces) as the argument. You do not need to provide all the values; for any you omit from the end of the list, defaults are taken from the nearest built-in size. The value n1 gives the piece size, n2 the width of the black border between squares, n3 the desired size for the clockFont, n4 the desired size for the coordFont, n5 the desired size for the messageFont, n6 the smallLayout flag (0 or 1), and n7 the tinyLayout flag (0 or 1). All dimensions are in pixels. If the border between squares is eliminated (0 width), the various highlight options will not work, as there is nowhere to draw the highlight. If smallLayout is 1 and titleInWindow is true, the window layout is rearranged to make more room for the title. If tinyLayout is 1, the labels on the menu bar are abbreviated to one character each and the buttons in the button bar are made narrower.
+-overrideLineGap n
+    When n >= 0, this forces the width of the black border between squares to n pixels for any board size. Mostly used to suppress the grid entirely by setting n = 0, e.g. in xiangqi or just getting a prettier picture. When n < 0 this the size-dependent width of the grid lines is used. Default: -1.
+-coords/-xcoords or -showCoords true/false
+    Sets the Show Coords menu option. See Options Menu. Default: false. The coordFont option specifies what font to use.
+-autoraise/-xautoraise or -autoRaiseBoard true/false
+    Sets the Auto Raise Board menu option. See Options Menu. Default: true.
+-autoflip/-xautoflip or -autoFlipView true/false
+    Sets the Auto Flip View menu option. See Options Menu. Default: true.
+-flip/-xflip or -flipView true/false
+    If Auto Flip View is not set, or if you are observing but not participating in a game, then the positioning of the board at the start of each game depends on the flipView option. If flipView is false (the default), the board is positioned so that the white pawns move from the bottom to the top; if true, the black pawns move from the bottom to the top. In any case, the Flip menu option (see Options Menu) can be used to flip the board after the game starts.
+-title/-xtitle or -titleInWindow true/false
+    If this option is true, XBoard displays player names (for ICS games) and game file names (for ‘Load Game’) inside its main window. If the option is false (the default), this information is displayed only in the window banner. You probably won't want to set this option unless the information is not showing up in the banner, as happens with a few X window managers.
+-buttons/-xbuttons or -showButtonBar True/False
+    If this option is False, xboard omits the [<<] [<] [P] [>] [>>] button bar from the window, allowing the message line to be wider. You can still get the functions of these buttons using the menus or their keyboard shortcuts. Default: true.
+-evalZoom factor
+    The score interval (-1,1) is blown up on the vertical axis of the Evaluation Graph by the given factor. Default: 1
+-evalThreshold n
+    Score below n (centiPawn) are plotted as 0 in the Evaluation Graph. Default: 25
+-mono/-xmono or -monoMode true/false
+    Determines whether XBoard displays its pieces and squares with two colors (true) or four (false). You shouldn't have to specify monoMode; XBoard will determine if it is necessary.
+-showTargetSquares true/false
+    Determines whether XBoard can highlight the squares a piece has legal moves to, when you grab that piece with the mouse. Default: false.
+-flashCount count
+-flashRate rate
+-flash/-xflash
+    These options enable flashing of pieces when they land on their destination square. flashCount tells XBoard how many times to flash a piece after it lands on its destination square. flashRate controls the rate of flashing (flashes/sec). Abbreviations: flash sets flashCount to 3. xflash sets flashCount to 0. Defaults: flashCount=0 (no flashing), flashRate=5.
+-highlight/-xhighlight or -highlightLastMove true/false
+    Sets the Highlight Last Move menu option. See Options Menu. Default: false.
+-highlightMoveWithArrow true/false
+    Sets the Highlight with Arrow menu option. See Options Menu. Default: false.
+-blind/-xblind or -blindfold true/false
+    Sets the Blindfold menu option. See Options Menu. Default: false.
+-periodic/-xperiodic or -periodicUpdates true/false
+    Controls updating of current move andnode counts in analysis mode. Default: true.
+-fSAN
+-sSAN
+    Causes the PV in thinking output of the mentioned engine to be converted to SAN before it is further processed. Warning: this might lose engine output not understood by the parser, and uses a lot of CPU power. Default: the PV is displayed exactly as the engine produced it.
+-showEvalInMoveHistory true/false
+    Controls whether the evaluation scores and search depth of engine moves are displayed with the move in the move-history window. Default: true.
+-clockFont font
+    The font used for the clocks. If the option value is a pattern that does not specify the font size, XBoard tries to choose an appropriate font for the board size being used. Default Xaw: -*-helvetica-bold-r-normal–*-*-*-*-*-*-*-*. Default GTK: Sans Bold %d.
+-coordFont font
+    The font used for rank and file coordinate labels if showCoords is true. If the option value is a pattern that does not specify the font size, XBoard tries to choose an appropriate font for the board size being used. Default Xaw: -*-helvetica-bold-r-normal–*-*-*-*-*-*-*-*. Default GTK: Sans Bold %d.
+-messageFont font
+    The font used for popup dialogs, menus, etc. If the option value is a pattern that does not specify the font size, XBoard tries to choose an appropriate font for the board size being used. Default Xaw: -*-helvetica-medium-r-normal–*-*-*-*-*-*-*-*. Default GTK: Sans Bold %d. The font used in the Edit Tags dialog. If the option value contains %d, XBoard will replace it by an appropriate font for the board size being used. (Only used in GTK build.) Default: Sans Normal %d. The font used in the Edit Comment dialog. If the option value contains %d, XBoard will replace it by an appropriate font for the board size being used. (Only used in GTK build.) Default: Sans Normal %d. The font used to display ICS output in the ICS Chat window. As ICS output often contains tables aligned by spaces, a mono-space font is recommended here. If the option value contains %d, XBoard will replace it by an appropriate font for the board size being used. (Only used in GTK build.) Default: Monospace Normal %d. The font used in Move History and Engine Output windows. As these windows display mainly moves, one could use a figurine font here. If the option value contains %d, XBoard will replace it by an appropriate font for the board size being used. (Only used in GTK build.) Default: Sans Normal %d. The font used in the listbox of the Game List window. If the option value contains %d, XBoard will replace it by an appropriate font for the board size being used. (Only used in GTK build.) Default: Sans Bold %d.
+-fontSizeTolerance tol
+    In the font selection algorithm, a nonscalable font will be preferred over a scalable font if the nonscalable font's size differs by tol pixels or less from the desired size. A value of -1 will force a scalable font to always be used if available; a value of 0 will use a nonscalable font only if it is exactly the right size; a large value (say 1000) will force a nonscalable font to always be used if available. Default: 4.
+-pid or -pieceImageDirectory dir
+    This options control what piece images xboard uses. XBoard will look in the specified directory for an image in png or svg format for every piece type, with names like BlackQueen.svg, WhiteKnight.svg etc. When neither of these is found (or no valid directory is specified) XBoard will use the svg piece that was installed with it (from the source-tree directory ‘svg’). Both svg and png images will be scaled by XBoard to the required size, but the png pieces lose much in quality when scaled too much.
+-whitePieceColor color
+-blackPieceColor color
+-lightSquareColor color
+-darkSquareColor color
+-highlightSquareColor color
+-preoveHighlightColor color
+-lowTimeWarningColor color
+    Colors to use for the pieces, squares, and square highlights. Defaults:
+
+              -whitePieceColor       #FFFFCC
+              -blackPieceColor       #202020
+              -lightSquareColor      #C8C365
+              -darkSquareColor       #77A26D
+              -highlightSquareColor  #FFFF00
+              -premoveHighlightColor #FF0000
+              -lowTimeWarningColor   #FF0000
+
+    On a grayscale monitor you might prefer:
+
+              -whitePieceColor       gray100
+              -blackPieceColor       gray0
+              -lightSquareColor      gray80
+              -darkSquareColor       gray60
+              -highlightSquareColor  gray100
+              -premoveHighlightColor gray70
+              -lowTimeWarningColor   gray70
+
+    The PieceColor options only work properly if the image files defining the pieces were pure black & white (possibly anti-aliased to produce gray scales and semi-transparancy), like the pieces images that come with the install. Their effect on colored pieces is undefined. The SquareColor option only have an effect when no board textures are used.
+-trueColors true/false
+    When set, this option suppresses the effect of the PieceColor options mentioned above. This is recommended for images that are already colored.
+-useBoardTexture true/false
+-liteBackTextureFile filename
+-darkBackTextureFile filename
+    Indicate the png image files to be used for drawing the board squares, and if they should be used rather than using simple colors. The algorithm for cutting squares out of a given bitmap is such that the picture is perfectly reproduced when a bitmap the size of the complete board is given. If the filename ends in "-NxM.png", with integer N and M, it is assumed to contain a bitmap of a complete board of N files and M ranks, and XBoard will scale it to exactly match the current square size. If N=M=0 it scales the entire bitmap to the size of the board, irrespective of the number of files and ranks of the latter. Without any -NxM suffix textures are only blown up by an integer factor when they are smaller than the square size, or, when the name starts with "xq", too small to cover the complete Xiangqi board. Default: false and ""
+-drag/-xdrag or -animateDragging true/false
+    Sets the Animate Dragging menu option. See Options Menu. Default: true.
+-animate/-xanimate or -animateMoving true/false
+    Sets the Animate Moving menu option. See Options Menu. Default: true.
+-animateSpeed n
+    Number of milliseconds delay between each animation frame when Animate Moves is on.
+-autoDisplayComment true/false
+-autoDisplayTags true/false
+    If set to true, these options cause the window with the move comments, and the window with PGN tags, respectively, to pop up automatically when such tags or comments are encountered during the replaying a stored or loaded game. Default: true.
+-pasteSelection true/false
+    If this option is set to true, the Paste Position and Paste Game options paste from the currently selected text. If false, they paste from the clipboard. Default: false.
+-autoCopyPV true|false
+    When this option is set, the position displayed on the board when you terminate a PV walk (initiated by a right-click on board or engine-output window) will be automatically put on the clipboard as FEN. Default: false.
+-dropMenu true|false
+    This option allows you to emulate old behavior, where the right mouse button brings up the (now deprecated) drop menu rather than displaying the position at the end of the principal variation. Default: False.
+-pieceMenu true|false
+    This option allows you to emulate old behavior, where the right mouse button brings up the (now deprecated) piece menu in Edit Position mode. From this menu you can select the piece to put on the square you clicked to bring up the menu, or select items such as clear board. You can also promote or demote a clicked piece to convert it into an unorthodox piece that is not directly in the menu, or give the move to black or white.
+-variations true|false
+    When this option is on, you can start new variations in Edit Game or Analyze mode by holding the Shift key down while entering a move. When it is off, the Shift key will be ignored. Default: False.
+-appendPV true|false
+    When this option is on, right-clicking a PV in the Engine Output window will play the first move of that PV in Analyze mode, or as many moves as you walk through by moving the mouse. Default: False.
+-absoluteAnalysisScores true|false
+    When true, scores on the Engine Output window during analysis will be printed from the white point-of-view, rather than the side-to-move point-of-view. Default: False.
+-scoreWhite true|false
+    When true, scores will always be printed from the white point-of-view, rather than the side-to-move point-of-view. Default: False.
+-memoHeaders true|false
+    When true, column headers will be displayed in the Engine Output window for the depth, score, time and nodes data. Right-clicking on these headers will hide or show the corresponding data. (Not intended for dynamic use, as already printed data of the current search will not be affected!) Defaul: False. 
+
+
+4.7 Adjudication Options
+
+-adjudicateLossThreshold n
+    If the given value is non-zero, XBoard adjudicates the game as a loss if both engines agree for a duration of 6 consecutive ply that the score is below the given score threshold for that engine. Make sure the score is interpreted properly by XBoard, using -firstScoreAbs and -secondScoreAbs if needed. Default: 0 (no adjudication)
+-adjudicateDrawMoves n
+    If the given value is non-zero, XBoard adjudicates the game as a draw if after the given number of moves it was not yet decided. Default: 0 (no adjudication)
+-checkMates true/false
+    If this option is set, XBoard detects all checkmates and stalemates, and ends the game as soon as they occur. Legality-testing must be switched on for this option to work. Default: true
+-testClaims true/false
+    If this option is set, XBoard verifies all result claims made by engines, and those who send false claims will forfeit the game because of it. Legality-testing must be switched on for this option to work. Default: true
+-materialDraws true/false
+    If this option is set, XBoard adjudicates games as draws when there is no sufficient material left to inflict a checkmate. This applies to KBKB with like bishops (any number, actually), and to KBK, KNK and KK. Legality-testing must be switched on for this option to work. Default: true
+-trivialDraws true/false
+    If this option is set, XBoard adjudicates games as draws that cannot be usually won without opponent cooperation. This applies to KBKB with unlike bishops, and to KBKN, KNKN, KNNK, KRKR and KQKQ. The draw is called after 6 ply into these end-games, to allow quick mates that can occur in some exceptional positions to be found by the engines. KQKQ does not really belong in this category, and might be taken out in the future. (When bitbase-based adjudications are implemented.) Legality-testing must be on for this option to work. Default: false
+-ruleMoves n
+    If the given value is non-zero, XBoard adjudicates the game as a draw after the given number of consecutive reversible moves. Engine draw claims are always accepted after 50 moves, irrespective of the given value of n.
+-repeatsToDraw n
+    If the given value is non-zero, xboard adjudicates the game as a draw if a position is repeated the given number of times. Engines draw claims are always accepted after 3 repeats, (on the 3rd occurrence, actually), irrespective of the value of n. Beware that positions that have different castling or en-passant rights do not count as repeats, XBoard is fully e.p. and castling aware! 
+
+
+4.8 Other options
+
+-ncp/-xncp or -noChessProgram true/false
+    If this option is true, XBoard acts as a passive chessboard; it does not start a chess engine at all. Turning on this option also turns off clockMode. Default: false.
+-viewer
+-viewerOptions string
+    Presence of the volatile option viewer on the command line will cause the value of the persistent option viewerOptions as stored in the settings file to be appended to the command line. The view option will be used by desktop associations with game or position file types, so that viewerOptions can be used to configure the exact mode XBoard will start in when it should act on such a file (e.g. in -ncp mode, or analyzing with your favorite engine). The options are also automatically appended when Board is invoked with a single argument not being an option name, which is then assumed to be the name of a loadGameFile or (when the name ends in .fen) a loadPositionFile. Default: "-ncp -engineOutputUp false -saveSettingsOnExit false".
+-tourneyOptions string
+    When XBoard is invoked with a single argument that is a file with .trn extension, it will assume this argument to be the value of a tourneyFile option, and apped the value of the persistent option tourneyOptions as stored in the settings file to the command line. Thus the value of tourneyOptions can be used to configure XBoard to automatically start running a tournament when it should act on such a file. Default: "-ncp -mm -saveSettingsOnExit false".
+-mode or -initialMode modename
+    If this option is given, XBoard selects the given modename from the Mode menu after starting and (if applicable) processing the loadGameFile or loadPositionFile option. Default: "" (no selection). Other supported values are MachineWhite, MachineBlack, TwoMachines, Analysis, AnalyzeFile, EditGame, EditPosition, and Training.
+-variant varname
+    Activates preliminary, partial support for playing chess variants against a local engine or editing variant games. This flag is not needed in ICS mode. Recognized variant names are:
+
+              normal        Normal chess
+              wildcastle    Shuffle chess, king can castle from d file
+              nocastle      Shuffle chess, no castling allowed
+              fischerandom  Fischer Random shuffle chess
+              bughouse      Bughouse, ICC/FICS rules
+              crazyhouse    Crazyhouse, ICC/FICS rules
+              losers        Lose all pieces or get mated (ICC wild 17)
+              suicide       Lose all pieces including king (FICS)
+              giveaway      Try to have no legal moves (ICC wild 26)
+              twokings      Weird ICC wild 9
+              kriegspiel    Opponent's pieces are invisible
+              atomic        Capturing piece explodes (ICC wild 27)
+              3check        Win by giving check 3 times (ICC wild 25)
+              shatranj      An ancient precursor of chess (ICC wild 28)
+              xiangqi       Chinese Chess (on a 9x10 board)
+              shogi         Japanese Chess (on a 9x9 board & piece drops)
+              capablanca    Capablanca Chess (10x8 board, with Archbishop
+                            and Chancellor pieces)
+              gothic        similar, with a better initial position
+              caparandom    An FRC-like version of Capablanca Chess (10x8)
+              janus         A game with two Archbishops (10x8 board)
+              courier       Medieval intermediate between shatranj and
+                            modern Chess (on 12x8 board)
+              falcon        Patented 10x8 variant with two Falcon pieces
+              berolina      Pawns capture straight ahead, and move diagonal
+              cylinder      Pieces wrap around the board edge
+              knightmate    King moves as Knight, and vice versa
+              super         Superchess (shuffle variant with 4 exo-pieces)
+              makruk        Thai Chess (shatranj-like, P promotes on 6th rank)
+              asean         ASEAN Chess (a modernized version of Makruk)
+              spartan       Spartan Chess (black has unorthodox pieces)
+              fairy         A catchall variant in which all piece types
+                            known to XBoard can participate (8x8)
+              unknown       Catchall for other unknown variants
+
+    NOT ALL BOARDSIZES PROVIDE A COMPLETE SET OF BUILT-IN BITMAPS FOR ALL UN-ORTHODOX PIECES, though. Only in boardSize middling and bulky all 22 piece types are provided, while -boardSize petite has most of them. Archbishop, Chancellor and Amazon are supported in every size from petite to bulky. Kings or Amazons are substituted for missing bitmaps. You can still play variants needing un-orthodox pieces in other board sizes providing your own bitmaps through the bitmapDirectory or pixmapDirectory options.
+
+    In the shuffle variants, XBoard now does shuffle the pieces, although you can still do it by hand using Edit Position. Some variants are supported only in ICS mode, including bughouse, and kriegspiel. The winning/drawing conditions in crazyhouse (off-board interposition on mate) are not fully understood, but losers, suicide, giveaway, atomic, and 3check should be OK. Berolina and cylinder chess can only be played with legality testing off. In crazyhouse, XBoard now does keep track of off-board pieces. In shatranj it does implement the baring rule when mate detection is switched on.
+-boardHeight N
+    Allows you to set a non-standard number of board ranks in any variant. If the height is given as -1, the default height for the variant is used. Default: -1
+-boardWidth N
+    Allows you to set a non-standard number of board files in any variant. If the width is given as -1, the default width for the variant is used. With a non-standard width, the initial position will always be an empty board, as the usual opening array will not fit. Default: -1
+-holdingsSize N
+    Allows you to set a non-standard size for the holdings in any variant. If the size is given as -1, the default holdings size for the variant is used. The first N piece types will go into the holdings on capture, and you will be able to drop them on the board in stead of making a normal move. If size equals 0, there will be no holdings. Default: -1
+-defaultFrcPosition N
+    Specifies the number of the opening position in shuffle games like Chess960. A value of -1 means the position is randomly generated by XBoard at the beginning of every game. Default: -1
+-pieceToCharTable string
+    The characters that are used to represent the piece types XBoard knows in FEN diagrams and SAN moves. The string argument has to have an even length (or it will be ignored), as white and black pieces have to be given separately (in that order). The last letter for each color will be the King. The letters before that will be PNBRQ and then a whole host of fairy pieces in an order that has not fully crystallized yet (currently FEACWMOHIJGDVSLU, F=Ferz, Elephant, A=Archbishop, C=Chancellor, W=Wazir, M=Commoner, O=Cannon, H=Nightrider). You should list at least all pieces that occur in the variant you are playing. If you have less than 44 characters in the string, the pieces not mentioned will get assigned a period, and you will not be able to distinguish them in FENs. You can also explicitly assign pieces a period, in which case they will not be counted in deciding which captured pieces can go into the holdings. A tilde '~' as a piece name does mean this piece is used to represent a promoted Pawn in crazyhouse-like games, i.e. on capture it turns back onto a Pawn. A '+' similarly indicates the piece is a shogi-style promoted piece, that should revert to its non-promoted version on capture (rather than to a Pawn). Note that promoted pieces are represented by pieces 11 further in the list. You should not have to use this option often: each variant has its own default setting for the piece representation in FEN, which should be sufficient in normal use. Default: ""
+-pieceNickNames string
+    The characters in the string are interpreted the same way as in the pieceToCharTable option. But on input, piece-ID letters are first looked up in the nicknames, and only if not defined there, in the normal pieceToCharTable. This allows you to have two letters designate the same piece, (e.g. N as an alternative to H for Horse in Xiangqi), to make reading of non-compliant notations easier. Default: ""
+-colorNickNames string
+    The side-to-move field in a FEN will be first matched against the letters in the string (first character for white, second for black), before it is matched to the regular 'w' and 'b'. This makes it easier to read non-compliant FENs, which, say, use 'r' for white. Default: ""
+-debug/-xdebug or -debugMode true/false
+    Turns on debugging printout.
+-debugFile filename or -nameOfDebugFile filename
+    Sets the name of the file to which XBoard saves debug information (including all communication to and from the engines). A %d in the given file name (e.g. game%d.debug) will be replaced by the unique sequence number of a tournament game, so that the debug output of each game will be written on a separate file.
+-engineDebugOutput number
+    Specifies how XBoard should handle unsolicited output from the engine, with respect to saving it in the debug file. The output is further (hopefully) ignored. If number=0, XBoard refrains from writing such spurious output to the debug file. If number=1, all engine output is written faithfully to the debug file. If number=2, any protocol-violating line is prefixed with a '#' character, as the engine itself should have done if it wanted to submit info for inclusion in the debug file. This option is provided for the benefit of applications that use the debug file as a source of information, such as the broadcaster of live games TLCV / TLCS. Such applications can be protected from spurious engine output that might otherwise confuse them.
+-rsh or -remoteShell shell-name
+    Name of the command used to run programs remotely. The default is rsh or remsh, determined when XBoard is configured and compiled.
+-ruser or -remoteUser user-name
+    User name on the remote system when running programs with the remoteShell. The default is your local user name.
+-userName username
+    Name under which the Human player will be listed in the PGN file. Default is the login name on your local computer.
+-delayBeforeQuit number
+-delayAfterQuit number
+    These options order pauses before and after sending the "quit" command to an engine that must be terminated. The pause between quit and the previous command is specified in milliseconds. The pause after quit is used to schedule a kill signal to be sent to the engine process after the number of specified seconds plus one. This signal is a different one as the terminiation signal described in the protocol specs which engines can suppress or ignore, and which is sent directly after the "quit" command. Setting delayAfterQuit to -1 will suppress sending of the kill signal. Default: 0
+-searchMode n
+    The integer n encodes the mode for the ‘find position’ function. Default: 1 (= Exact position match)
+-eloThresholdBoth elo
+-eloThresholdAny elo
+    Defines a lower limit for the Elo rating, which has to be surpassed before a game will be considered when searching for a board position. Default: 0
+-dateThreshold year
+    Only games not played before the given year will be considered when searching for a board position 
+
+
