@@ -9,6 +9,7 @@ import glob, shutil
 import pickle
 import os
 import sys
+import time
 
 if len(sys.argv)<2:
     print("Plot the confusion graph using validation samples")
@@ -28,6 +29,7 @@ else:
 
 xcoords=[]
 ycoords=[]
+starttime = time.time()
 for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     numsamples -= 1
     if numsamples<=0: break
@@ -41,6 +43,8 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     else:
         xcoords.append(Y[0])
     print(file+" "+epd+" sf:"+str(Y[0])+" nn:"+str(val))
+elapsed=time.time()-starttime
+print(str(int(sys.argv[1]))+" samples in "+str(elapsed)+" seconds = "+str(int(sys.argv[1])/elapsed)+" nodes/sec")
     
 #plt.plot([-10000,10000],[0,0])
 #plt.plot([0,0],[-10000,10000])

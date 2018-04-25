@@ -5,9 +5,6 @@ from Eval import Eval
 import chess.uci
 import sys
 
-eval = Eval()
-board = chess.Board()
-
 forcemove = False
 while True:
 
@@ -21,6 +18,7 @@ while True:
         print('tellics say based on SlyMlego deep learning platform')
         print('tellics say by Stefano Maragò 2018')
         print('tellics say https://github.com/stevexyz/SlyMlego')
+        board = chess.Board()
 
     elif parts[0]=='quit':
         break
@@ -28,6 +26,7 @@ while True:
     elif parts[0]=='protover':
         print('feature done=0')
         print('feature debug=1')
+        eval = Eval()
         eval.EvaluatePositionB(board)[0] # just to startup engine
         print('feature myname="oneply"')
         print('feature variants="normal"')
@@ -59,7 +58,7 @@ while True:
     elif parts[0]=='usermove':
         board.push_uci(parts[1])
 
-    if parts[0]=='go' or (parts[0]=='usermove' and not forcemove):
+    if parts[0]=='go' or (parts[0]=='usermove' and not forcemove): # usermove already processed
         forcemove = False
         bestmove = None
         bestval = Const.INFINITECP
