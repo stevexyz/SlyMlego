@@ -5,20 +5,23 @@ from Eval import Eval
 import chess.uci
 import sys
 
+if len(sys.argv) > 2:
+    print('Xboard engine string: "python3 ', sys.argv[0], '[<modelfile>]"')
+    exit(1)
+
 forcemove = False
 while True:
 
-    line = sys.stdin.readline()
-    if line == None: break
+    try: line = input()
+    except KeyboardInterrupt: pass # avoid control-c breaks
     line = line.strip(' \t\n')
     parts = line.split(' ')
 
     if parts[0]=='xboard':
-        print('tellics say "1 ply" experimental chess engine')
+        print('tellics say 1-ply experimental chess engine')
         print('tellics say based on SlyMlego deep learning platform')
         print('tellics say by Stefano Maragò 2018')
         print('tellics say https://github.com/stevexyz/SlyMlego')
-        board = chess.Board()
 
     elif parts[0]=='quit':
         break
@@ -26,8 +29,10 @@ while True:
     elif parts[0]=='protover':
         print('feature done=0')
         print('feature debug=1')
-        eval = Eval()
-        eval.EvaluatePositionB(board)[0] # just to startup engine
+        board = chess.Board()
+        if len(sys.argv)<=1: eval = Eval()
+        else: eval = Eval(modelfile=sys.argv[1])
+        eval.EvaluatePositionB(board) # just to startup engine
         print('feature myname="oneply"')
         print('feature variants="normal"')
         print('feature setboard=1')

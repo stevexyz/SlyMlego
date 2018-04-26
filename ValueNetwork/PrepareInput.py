@@ -71,7 +71,7 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
 
     engine1.position(board)
     engine1.go(movetime=Const.MOVETIME)
-    print(" ".join(epdposition.split()[0:4])+": "+str(len(info_handler1.info["pv"])))
+    print(str(initialline+line)+": "+" ".join(epdposition.split()[0:4])+" x"+str(len(info_handler1.info["pv"])))
     #print(board)
     for i in info_handler1.info["pv"]:
 
