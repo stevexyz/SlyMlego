@@ -64,7 +64,7 @@ while True:
             if board.is_checkmate():
                 val = -999999 # ensure to follow up
             else:
-                val = eval.EvaluatePositionB(board)[0]
+                val = eval.EvaluatePositionB(board)[0] * ( -1 if board.turn==chess.BLACK else 1 )
             print("info currmove "+str(m)+" score "+str(-val))
             if val<bestval: # minimum value for adversary
                 bestmove = m
