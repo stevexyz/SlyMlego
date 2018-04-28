@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import Const
-from Eval import Eval
 import chess.uci
 import sys
 
@@ -12,9 +11,9 @@ if len(sys.argv) > 2:
 forcemove = False
 while True:
 
-    try: line = input()
+    try: line = sys.stdin.readline()
     except KeyboardInterrupt: pass # avoid control-c breaks
-    line = line.strip(' \t\n')
+    line = line.strip(' \t\n'+chr(3))
     parts = line.split(' ')
 
     if parts[0]=='xboard':
@@ -23,17 +22,16 @@ while True:
         print('tellics say by Stefano Maragò 2018')
         print('tellics say https://github.com/stevexyz/SlyMlego')
 
-    elif parts[0]=='quit':
-        break
-
-    elif parts[0]=='protover':
+    elif parts[0]=='protover' and parts[1]=='2':
         print('feature done=0')
+        sys.stdout.flush() # ensure xboard wait to activate network
         print('feature debug=1')
+        from Eval import Eval
         board = chess.Board()
-        if len(sys.argv)<=1: eval = Eval()
-        else: eval = Eval(modelfile=sys.argv[1])
+        if len(sys.argv)<=1: eval = Eval(quiet=True)
+        else: eval = Eval(modelfile=sys.argv[1], quiet=True)
         eval.EvaluatePositionB(board) # just to startup engine
-        print('feature myname="oneply"')
+        print('feature myname="1ply-v0.1"')
         print('feature variants="normal"')
         print('feature setboard=1')
         print('feature ping=1')
@@ -44,6 +42,9 @@ while True:
         print('feature memory=0')
         print('feature sigint=0')
         print('feature done=1')
+
+    elif parts[0]=='quit':
+        break
 
     elif parts[0]=='new':
         board = chess.Board()
@@ -72,7 +73,7 @@ while True:
             if board.is_checkmate():
                 val = -999999
             else:
-                val = eval.EvaluatePositionB(board)[0] * ( -1 if board.turn==chess.BLACK else 1 )
+                val = eval.EvaluatePositionB(board)[0] * (-1 if board.turn==chess.BLACK else 1)
             print("# currmove "+str(m)+" score "+str(-val))
             if val<bestval: # look for minimum value for adversary
                 bestmove = m

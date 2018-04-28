@@ -15,9 +15,9 @@ import FeaturesExtraction as fe
 
 class Eval:
 
-    def __init__(self, modelfile=Const.MODELFILE+".hdf5", openingbookfile=None, tablebases=None):
+    def __init__(self, modelfile=Const.MODELFILE+".hdf5", openingbookfile=None, tablebases=None, quiet=False):
         self.model = load_model(modelfile)
-        sys.stderr.write("Model "+modelfile+" loaded")
+        if not quiet: sys.stderr.write("Model "+modelfile+" loaded")
         #if openingbook != None: self.openingbook = chess.polyglot.open_reader(openingbookfile)
 
     def EvaluatePositionB(self, board):
