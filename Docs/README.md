@@ -69,25 +69,28 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 
 ## HOW-TO
 
+**Create a new neural network**:
+1. Edit the one present `TrainModel.py` between the "@beginmodel" and "@endmodel" tags. The input are `Const.NUMFEATURES` matrices of 8x8, the output should be a single value in the range -1,1 indicating the evaluation of the position (the nearer to -1 the more the black is estimated to win, the more the value nearer to 1 the more the white should win, with 0 indicating parity)
+
 **Train the model**:
-1. Get fen/epd positions for training
-2. Prepare training input -> e.g. `PrepareInput.py file.epd 1 100000`
+1. Get fen/epd positions for training (there are some in the `epdfiles` directory)
+2. Prepare training input -> e.g. `./PrepareInput.py file.epd 1 100000`
 3. Put some of the position prepared from `__inputstobeprocessed` into `__validationdata` -> e.g. `mv-tovalidation.py 1000`
-4. Train model -> e.g. `TrainModel.py` (you can run tensorboard to check results)
-5. Play with the engine -> Eval function is ready: you can try it with `print-confusiongraph.py` or let me know if you'll insert it in an engine! :)
+4. Train model -> e.g. `./TrainModel.py` (you can run tensorboard to check results)
+5. Play with the engine -> Eval function is ready: you can try it with `./print-confusiongraph.py` or let me know if you'll insert it in an engine! :)
 
 **Alternatively train the model without keeping files**:
 1. Get fen/epd positions for training
-2. Prepare validation data -> e.g. `PrepareInput.py file.epd 1 1000 && mv-tovalidation.py 1000`
-3. Train model -> e.g. `TrainModel.py file.epd 1001`
+2. Prepare validation data -> e.g. `./PrepareInput.py file.epd 1 1000 && mv-tovalidation.py 1000`
+3. Train model -> e.g. `./TrainModel.py file.epd 1001`
 
 **Reset model / learning**:
-1. Remove saved model file -> `clean-model.sh`
-2. Put back all training files in inputfiletoprocess directory -> `mv-backtoprocess.py`
+1. Remove saved model file -> `./clean-model.sh`
+2. Put back all training files in inputfiletoprocess directory -> `./mv-backtoprocess.py`
 
 **Add training samples** (and train):
-1. Simply prepare input files from new epd(s) -> `PrepareInput.py newfile.epd`
-2. Continue training model -> `TrainModel.py`
+1. Simply prepare input files from new epd(s) -> `./PrepareInput.py newfile.epd`
+2. Continue training model -> `./TrainModel.py`
 
 **Backup the trained model**:
 1. Move or copy all `__model.*` files in a new directory
@@ -97,9 +100,9 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 Note: features should be the same of the model saved else input layer will not match
 
 **Add/modify features**:
-1. Remove all training files from all directories -> `clean-model-and-data.sh`
+1. Remove all training files from all directories -> `./clean-model-and-data.sh`
 2. Modify `FeatureExtraction.py` program and add/modify features (in `Const.py` there is the list of features)
-3. To see features extracted use `print_x.py` (note that is adapting dimension order and coordinates for pretty printing)
+3. To see features extracted use `./print_x.py` (note that is adapting dimension order and coordinates for pretty printing)
 4. Prepare and train again
 
 **Evaluate a single chess position**:
