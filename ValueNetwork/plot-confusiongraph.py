@@ -46,17 +46,11 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
 elapsed=time.time()-starttime
 print(str(int(sys.argv[1]))+" samples in "+str(elapsed)+" seconds = "+str(int(sys.argv[1])/elapsed)+" nodes/sec")
     
-#plt.plot([-10000,10000],[0,0])
-#plt.plot([0,0],[-10000,10000])
-
 plt.autoscale = False
-plt.axis([-15000, 15000, -15000, 15000])
-
+plt.axis([-Const.INFINITECP, Const.INFINITECP, -Const.INFINITECP, Const.INFINITECP])
 plt.plot(xcoords,ycoords,"ro")
-
 plt.grid(True)
 plt.axes().set_aspect('equal')
-
 plt.ylabel('ann model eval')
 plt.xlabel('std engine eval')
 plt.title('"Confusion plot" of model evaluations')

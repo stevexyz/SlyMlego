@@ -2,7 +2,7 @@
 
 if [ "$1" != "" ]; then
     mkdir "__model_$1"
-    mv __model.* "__model_$1/"
+    mv __model*.* "__model_$1/"
     mv __logs "__model_$1/"
 else
     echo "Usage: " $0 " <new_model_name>"

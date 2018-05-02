@@ -5,8 +5,8 @@ import Const
 # to be incremented over time (quick beginning precise later)
 EPOCHSTEPS = 100 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 20 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 400 # number of data in a generator sample
+VALIDATIONSTEPS = 100 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+SAMPLENUM = 500 # number of data in a generator sample
 
 
 from keras.models import Model
@@ -100,34 +100,6 @@ def rmse(y_true, y_pred):
     return root_mean_squared_error(y_true, y_pred)
 
 
-#class LossHistory(keras.callbacks.Callback):
-#    def on_train_begin(self, logs={}):
-#        self.accs = []
-#        self.val_accs = []
-#        self.losses = []
-#        self.val_losses = []
-#    def on_batch_end(self, batch, logs={}):
-#        self.accs.append(logs.get('acc'))
-#        self.val_accs.append(logs.get('val_acc'))
-#        self.losses.append(logs.get('loss'))
-#        self.val_losses.append(logs.get('val_loss'))
-#        #
-#        plt.plot(self.accs)
-#        plt.plot(self.val_accs)
-#        plt.title('model accuracy')
-#        plt.ylabel('accuracy')
-#        plt.xlabel('epoch')
-#        plt.legend(['train', 'test'], loc='upper left')
-#        plt.savefig(Const.MODELFILE+'-log-acc.png')
-#        plt.plot(self.losses)
-#        plt.plot(self.val_losses)
-#        plt.title('model loss')
-#        plt.ylabel('loss')
-#        plt.xlabel('epoch')
-#        plt.legend(['train', 'test'], loc='upper left')
-#        plt.savefig(Const.MODELFILE+'-log-loss.png')
-
-
 #MAIN:
 
 # fix initial seed for reproducibility
@@ -146,92 +118,95 @@ else:
 
 
     #@modelbegin
+    #----------
 
-    modelname = "Resnet2-v001-alfa"
+    modelname = "Resnet3-alfa"
 
-    '''
-    ideas from:
-    - https://ctmakro.github.io/site/on_learning/resnet_keras.html
-    - https://gist.github.com/mjdietzx/0cb95922aac14d446a6530f87b3a04ce
-    -
-    '''
-
-    cardinality = 8
-
-    def normalization_and_activation(y):
-        y = BatchNormalization(axis=-1)(y)
-        y = ELU()(y) # LeakyReLU()(y)
-        return y
-
-    def residual_block(y, nb_channels_in, nb_channels_out, strides=(1, 1), _project_shortcut=False):
+    def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
         shortcut = y
-        # we modify the residual building block as a bottleneck design to make the network more economical
-        y = Conv2D(nb_channels_in, kernel_size=(1, 1), strides=(1, 1), padding='same', use_bias=False)(y)
-        y = normalization_and_activation(y)
-        # ResNeXt (identical to ResNet when `cardinality` == 1)
         if cardinality == 1:
-            y = Conv2D(nb_channels_in, kernel_size=(3, 3), strides=strides, padding='same', use_bias=False)(y)
+            y = Conv2D(nb_channels_in, kernel_size=(8, 8), strides=(1,1), padding='same', use_bias=False)(y)
         else:
             assert not nb_channels_in % cardinality
             _d = nb_channels_in // cardinality
             groups = []
             for j in range(cardinality):
                 group = Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
-                groups.append(Conv2D(_d, kernel_size=(3, 3), strides=strides, padding='same', use_bias=False)(group))
+                groups.append(Conv2D(_d, kernel_size=(8, 8), strides=(1,1), padding='same', use_bias=False)(group))
             y = concatenate(groups)
-        y = normalization_and_activation(y)
-        y = Conv2D(nb_channels_out, kernel_size=(1, 1), strides=(1, 1), padding='same', use_bias=False)(y)
-        y = BatchNormalization()(y)
-        # identity shortcuts used directly when the input and output are of the same dimensions
-        if _project_shortcut or strides != (1, 1):
-            # when the dimensions increase projection shortcut is used to match dimensions (done by 1×1 convolutions)
-            shortcut = Conv2D(nb_channels_out, kernel_size=(1, 1), strides=strides, padding='same')(shortcut)
-            shortcut = BatchNormalization()(shortcut)
+        y = BatchNormalization(axis=-1)(y)
+        y = ELU()(y)
         y = add([shortcut, y])
-        # relu is performed right after each batch normalization,
-        # expect for the output of the block where relu is performed after the adding to the shortcut
-        y = LeakyReLU()(y)
+        y = ELU()(y)
         return y
 
     input_tensor = Input(shape=(8, 8, Const.NUMFEATURES))
-    net_size = 512
-    network = Conv2D(net_size, kernel_size=(5, 5), strides=(1, 1), padding='same', use_bias=False)(input_tensor)
-    network = normalization_and_activation(network)
-    #x = MaxPool2D(pool_size=(3, 3), strides=(1, 1), padding='same')(x)
-    #for i in range(3):
-    #    project_shortcut = True if i == 0 else False
-    #    x = residual_block(x, 128, 1024, _project_shortcut=project_shortcut)
-    for i in range(2):
-        network = residual_block(network, net_size, net_size, strides=(1, 1))
-    for i in range(2):
-        network = residual_block(network, net_size, net_size, strides=(1, 1))
+    net_size = 64
+    network = Conv2D(net_size, kernel_size=(8, 8), strides=(1, 1), padding='same', use_bias=False)(input_tensor)
+    network = BatchNormalization(axis=-1)(network)
+    network = ELU()(network)
+    for i in range(4):
+        network = residual_block(network, net_size, net_size)
     network = GlobalAveragePooling2D()(network)
     network = Dense(1)(network)
     network = Activation("tanh")(network)
     model = Model(inputs=[input_tensor], outputs=[network])
 
-    # add loss function and optimizer
+    # # example of simple model
+    # modelname = "Test-20180430-c"
+    # input = Input(shape=((8, 8, Const.NUMFEATURES) if K.image_dim_ordering()=="tf" \
+    #            else (Const.NUMFEATURES, 8, 8)))
+    # net = Dense(8, use_bias=False, activation='relu') (input)
+    # #net = Dense(64, use_bias=False, activation='relu') (net)
+    # net = Flatten() (net)
+    # net = Dense(1, activation='tanh') (net)
+    # model = Model(inputs=input, outputs=net)
+
     model.compile(
-        loss='mean_absolute_percentage_error', # mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
-                                   # squared_hinge, hinge, logcosh, categorical_hinge,
-                                   # categorical_crossentropy, sparse_categorical_crossentropy, binary_crossentropy,
-                                   # kullback_leibler_divergence, poisson, cosine_proximity
-        optimizer='nadam', # SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
-                           # RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
-                           # Adagrad(lr=0.01, epsilon=None, decay=0.0)
-                           # Adadelta(lr=1.0, rho=0.95, epsilon=None, decay=0.0)
-                           # Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-                           # Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
-                           # Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
-        metrics=["mse", "mae", "mape", "cosine" # mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, cosine_proximity, rmse
-                 # binary_accuracy, categorical_accuracy, sparse_categorical_accuracy, top_k_categorical_accuracy(k), sparse_top_k_categorical_accuracy(k)
-                ])
+        loss='mean_absolute_percentage_error', 
+        optimizer='nadam', 
+        metrics=["mse", "mae", "mape", "cosine"])
 
     # include/exclude evaluations in certain ranges of centipawns
     includerange = False
     excluderange = (-50,50) # in order to limit error percentage
 
+    #----------
     #@modelend
+
+
+# activations:
+# softmax(axis=-1)
+# softplus
+# softsign
+# elu(alpha=1.0)
+# selu
+# relu
+# tanh
+# sigmoid
+# hard_sigmoid
+# linear
+# PReLU
+# LeakyReLU
+
+# losses:
+# mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
+# squared_hinge, hinge, logcosh, categorical_hinge,
+# categorical_crossentropy, sparse_categorical_crossentropy, binary_crossentropy,
+# kullback_leibler_divergence, poisson, cosine_proximity
+
+# optimizers:
+# SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+# RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
+# Adagrad(lr=0.01, epsilon=None, decay=0.0)
+# Adadelta(lr=1.0, rho=0.95, epsilon=None, decay=0.0)
+# Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+# Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
+# Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
+
+# metrics:
+# regression: mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, cosine_proximity, rmse
+# classification: binary_accuracy, categorical_accuracy, sparse_categorical_accuracy, top_k_categorical_accuracy(k), sparse_top_k_categorical_accuracy(k)
 
 
     plot_model(model, to_file=Const.MODELFILE+'.png', show_shapes=True, show_layer_names=True)
@@ -250,7 +225,7 @@ model.fit_generator(
     epochs=EPOCHSNUM,
     verbose=1,
     callbacks=[
-        ModelCheckpoint(Const.MODELFILE+".hdf5", monitor='acc', verbose=1, save_best_only=False, mode='max'),
+        ModelCheckpoint(Const.MODELFILE+".hdf5", monitor='loss', verbose=1, save_best_only=False, period=1),
         CSVLogger(Const.MODELFILE+".log", separator=";", append=True),
         TensorBoard(log_dir="__logs/{}".format(time())),
         #LossHistory(),

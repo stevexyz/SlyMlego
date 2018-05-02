@@ -19,7 +19,7 @@ while True:
     if parts[0]=='xboard':
         print('tellics say 1-ply experimental chess engine')
         print('tellics say based on SlyMlego deep learning platform')
-        print('tellics say by Stefano Maragò 2018')
+        print('tellics say by Stefano Marago\' 2018')
         print('tellics say https://github.com/stevexyz/SlyMlego')
 
     elif parts[0]=='protover' and parts[1]=='2':
