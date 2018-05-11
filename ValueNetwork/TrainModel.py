@@ -120,47 +120,18 @@ else:
     #@modelbegin
     #----------
 
-    modelname = "Resnet3-alfa"
+    modelname = "Test-20180501"
 
-    def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
-        shortcut = y
-        if cardinality == 1:
-            y = Conv2D(nb_channels_in, kernel_size=(8, 8), strides=(1,1), padding='same', use_bias=False)(y)
-        else:
-            assert not nb_channels_in % cardinality
-            _d = nb_channels_in // cardinality
-            groups = []
-            for j in range(cardinality):
-                group = Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
-                groups.append(Conv2D(_d, kernel_size=(8, 8), strides=(1,1), padding='same', use_bias=False)(group))
-            y = concatenate(groups)
-        y = BatchNormalization(axis=-1)(y)
-        y = ELU()(y)
-        y = add([shortcut, y])
-        y = ELU()(y)
-        return y
+    input = Input(shape=((8, 8, Const.NUMFEATURES) if K.image_dim_ordering()=="tf" \
+               else (Const.NUMFEATURES, 8, 8)))
 
-    input_tensor = Input(shape=(8, 8, Const.NUMFEATURES))
-    net_size = 64
-    network = Conv2D(net_size, kernel_size=(8, 8), strides=(1, 1), padding='same', use_bias=False)(input_tensor)
-    network = BatchNormalization(axis=-1)(network)
-    network = ELU()(network)
-    for i in range(4):
-        network = residual_block(network, net_size, net_size)
-    network = GlobalAveragePooling2D()(network)
-    network = Dense(1)(network)
-    network = Activation("tanh")(network)
-    model = Model(inputs=[input_tensor], outputs=[network])
+    net = Dense(Const.NUMFEATURES * 8, use_bias=False, activation='relu') (input)
 
-    # # example of simple model
-    # modelname = "Test-20180430-c"
-    # input = Input(shape=((8, 8, Const.NUMFEATURES) if K.image_dim_ordering()=="tf" \
-    #            else (Const.NUMFEATURES, 8, 8)))
-    # net = Dense(8, use_bias=False, activation='relu') (input)
-    # #net = Dense(64, use_bias=False, activation='relu') (net)
-    # net = Flatten() (net)
-    # net = Dense(1, activation='tanh') (net)
-    # model = Model(inputs=input, outputs=net)
+    net = Flatten() (net)
+
+    net = Dense(1, activation='tanh') (net)
+
+    model = Model(inputs=input, outputs=net)
 
     model.compile(
         loss='mean_absolute_percentage_error', 
