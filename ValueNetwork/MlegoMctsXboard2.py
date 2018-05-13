@@ -11,9 +11,9 @@ import chess.uci
 import sys
 from math import (sqrt, log)
 
-balance_constant = 3 # exploration vs exploitation balance
-move_timeframe = 3  # number of seconds for a move
-modeleval = {} # model will be loaded in protover call
+balance_constant = 10 # exploration vs exploitation balance
+move_timeframe = 2  # number of seconds for a move
+modeleval = None # model will be loaded in protover call
 
 
 # references:
@@ -31,18 +31,19 @@ class MctsNode(object):
         self.anneval = None
         self.value = None
         self.board = board
-        self.movetoexpand = Queue()
+        self.movestoexpand = Queue()
         self.terminalnode = True
         for m in self.board.generate_legal_moves():
-            self.movetoexpand.put(m)
+            self.movestoexpand.put(m)
             self.terminalnode = False
         self.isroot = False # root will be moved during game progress
 
     def valuepos(self):
         if not self.value:
             self.anneval = modeleval.EvaluatePositionB(self.board)[0] \
-                           * (-1 if self.board.turn==chess.WHITE else 1)
+                           * (1 if self.board.turn==chess.WHITE else -1)
             self.value = self.anneval
+            print("# evaluated ", self.board.fen(), " = ", self.anneval)
         return self.value
 
     def boardcopy(self):
@@ -51,21 +52,19 @@ class MctsNode(object):
     def setroot(self):
         self.isroot = True
 
-    def is_empty_unvisited_children(self):
-        return self.movetoexpand.empty()
 
-
-def traverse(parent):
+def traverse(parent, mainline=""):
 
     parent.visitcount += 1
+    print("# visit ", parent.visitcount, " of ", mainline)
 
     if parent.terminalnode:
-        print("# terminal")
+        print("# terminal node")
         return parent
 
-    if not parent.is_empty_unvisited_children():
+    if not parent.movestoexpand.empty():
         # pick_univisted_children and create node for it
-        move = parent.movetoexpand.get()
+        move = parent.movestoexpand.get()
         parent.movetochild.append(move)
         board = parent.boardcopy()
         board.push(move)
@@ -78,15 +77,18 @@ def traverse(parent):
     max = -float('inf')
     bestchild = None
     for i in range(len(parent.children)):
-        e = parent.children[i].valuepos() + \
-            balance_constant * sqrt( log( parent.children[i].visitcount ) / parent.visitcount )
+        exploit = -parent.children[i].valuepos()
+        explore = balance_constant * sqrt( log( parent.visitcount ) / parent.children[i].visitcount )
+        e = exploit + explore
+        print("# deciding on move ", parent.movetochild[i], \
+              " exploit ", exploit, " explore ", explore)
         if e > max:
             bestchild = i
             max = e
     print("# picked move ", parent.movetochild[bestchild], \
           " visited already ", parent.children[bestchild].visitcount, " times")
 
-    return traverse(parent.children[bestchild])
+    return traverse(parent.children[bestchild], mainline+str(parent.movetochild[bestchild])+",")
 
 
 def backpropagate(node, eval):
@@ -94,18 +96,20 @@ def backpropagate(node, eval):
     # recalculate max (to be optimized)
     if not node.terminalnode:
         if len(node.children)>1:
+            print("# backpropagated value ", eval)
             mx = eval
             for n in node.children:
                 mx = max( mx, -n.valuepos()) # minus because is adversary
             eval = mx
-            print("# backpropagated recalculation value ", mx)
 
-    print("# old node value ", node.value, " new node value ", eval)
-    node.value = eval
-
-    if not node.isroot:
-        print("# continue backpropagation")
-        backpropagate(node.parent, -eval)
+    if not node.value or eval>node.value:
+        node.value = eval
+        print("# backpropagated assignment: old node value ", node.value, " new node value ", eval)
+        if not node.isroot:
+            print("# continue backpropagation")
+            backpropagate(node.parent, -eval)
+    else:
+        print("# backpropagation stop since: old node value ", node.value, " new value proposed ", eval)
 
     return
 
@@ -166,6 +170,12 @@ while True:
         # create root node
         root = MctsNode(chess.Board())
 
+    elif parts[0]=='level':
+        # e.g. "level 0 1:05 3"
+        move_timeframe = ( int((parts[2].split(":"))[0])*60 +  \
+                           int((parts[2].split(":"))[1]) )/60 + int(parts[3])*0.95
+        print("# new timeframe ", move_timeframe)
+
     elif parts[0]=='ping':
         print('pong '+parts[1])
 
@@ -179,8 +189,8 @@ while True:
     elif parts[0]=='usermove':
 
         # expand unvisited children in case move is there
-        while not root.is_empty_unvisited_children():
-            move = root.movetoexpand.get()
+        while not root.movestoexpand.empty():
+            move = root.movestoexpand.get()
             root.movetochild.append(move)
             board = root.boardcopy()
             board.push(move)
@@ -190,6 +200,7 @@ while True:
 
         for i in range(len(root.children)):
             if root.movetochild[i].uci()==parts[1]:
+                print('# new root is %s' % root.movetochild[i])
                 root = root.children[i]
                 break
 
@@ -200,26 +211,29 @@ while True:
         # until there is time expand tree with mc ucb selection approach
         start_time = time.time()
         root.setroot() # stop backpropagation here
+        calculated_positions = 0
         while time.time()-start_time < move_timeframe:
             leaf = traverse(root) # to pick unvisited/best node
             eval = leaf.valuepos() # simulation
             backpropagate(leaf.parent, -eval)
+            calculated_positions += 1
+        print('# ', calculated_positions, ' positions evaluated')
 
-        # pick child with highest number of visits
-        # or alternatively best lower confidence bound
-        # and update root
+        # pick best child and update root
         bestvalue = -float('inf')
         bestchild = None
         for i in range(len(root.children)):
             if selection_mode=="best lower confidence bound selection":
-                # pick child with best lower confidence bound 
-                e = root.children[i].valuepos() - \
-                    balance_constant * sqrt( log( root.children[i].visitcount ) / root.visitcount )
+                # pick child with best lower confidence bound
+                if not bestchild: print('# pick child with best lower confidence bound')
+                e = -root.children[i].valuepos() - \
+                    balance_constant * sqrt( log( root.visitcount ) / root.children[i].visitcount )
                 if e > bestvalue:
                     bestchild = i
                     bestvalue = e
             elif selection_mode=="highest number of visits":
-                # pick child with highest number of visits
+                # pick child with the highest number of visits
+                if not bestchild: print('# pick child with the highest number of visits')
                 if root.children[i].visitcount > bestvalue:
                     bestchild = i
                     bestvalue = root.children[i].visitcount
@@ -227,6 +241,7 @@ while True:
                 raise ValueError('Selection mode "%s" not recognized' % selection_mode)
 
         print('move %s' % root.movetochild[bestchild])
+        print('# new root is %s' % root.movetochild[bestchild])
         root = root.children[bestchild]
 
     sys.stdout.flush()
