@@ -11,9 +11,11 @@ import chess.uci
 import sys
 from math import (sqrt, log)
 
-balance_constant = 10 # exploration vs exploitation balance
+balance_constant = 50 # exploration vs exploitation balance
 move_timeframe = 2  # number of seconds for a move
 modeleval = None # model will be loaded in protover call
+evaltable = {} # hash store for evaluated positions
+hitsevaltable = 0
 
 
 # references:
@@ -39,11 +41,21 @@ class MctsNode(object):
         self.isroot = False # root will be moved during game progress
 
     def valuepos(self):
+        global hitsevaltable
         if not self.value:
-            self.anneval = modeleval.EvaluatePositionB(self.board)[0] \
-                           * (1 if self.board.turn==chess.WHITE else -1)
+            try: 
+                self.anneval = evaltable[" ".join(self.board.fen().split()[0:4])]
+                print("# evaltable ", self.board.fen(), " = ", self.anneval)
+                hitsevaltable += 1
+            except KeyError:
+                if self.board.is_checkmate():
+                    self.anneval = -999999
+                else:
+                    self.anneval = modeleval.EvaluatePositionB(self.board)[0] \
+                                   * (1 if self.board.turn==chess.WHITE else -1)
+                evaltable[" ".join(self.board.fen().split()[0:4])] = self.anneval
+                print("# evaluated ", self.board.fen(), " = ", self.anneval)
             self.value = self.anneval
-            print("# evaluated ", self.board.fen(), " = ", self.anneval)
         return self.value
 
     def boardcopy(self):
@@ -56,7 +68,7 @@ class MctsNode(object):
 def traverse(parent, mainline=""):
 
     parent.visitcount += 1
-    print("# visit ", parent.visitcount, " of ", mainline)
+    print("# visit ", parent.visitcount, " of ", mainline if mainline!="" else "root")
 
     if parent.terminalnode:
         print("# terminal node")
@@ -94,22 +106,21 @@ def traverse(parent, mainline=""):
 def backpropagate(node, eval):
 
     # recalculate max (to be optimized)
-    if not node.terminalnode:
-        if len(node.children)>1:
-            print("# backpropagated value ", eval)
-            mx = eval
-            for n in node.children:
-                mx = max( mx, -n.valuepos()) # minus because is adversary
-            eval = mx
+    if len(node.children)>1:
+        print("# backpropagated value ", eval)
+        mx = eval
+        for n in node.children:
+            mx = max( mx, -n.valuepos()) # minus because is adversary
+        eval = mx
 
-    if not node.value or eval>node.value:
+    if node.movestoexpand.empty() or not node.value:
         node.value = eval
         print("# backpropagated assignment: old node value ", node.value, " new node value ", eval)
         if not node.isroot:
             print("# continue backpropagation")
             backpropagate(node.parent, -eval)
     else:
-        print("# backpropagation stop since: old node value ", node.value, " new value proposed ", eval)
+        print("# backpropagation stops here")
 
     return
 
@@ -117,14 +128,17 @@ def backpropagate(node, eval):
 #=========================
 # main MlegoMctsXboard2.py
 
-if len(sys.argv) > 3:
-    print('Xboard engine string: "python3 ', sys.argv[0], '[[<modelfile>] <bestlowerconfidenceboundselection>]"')
+if len(sys.argv) > 4:
+    print('Xboard engine string: "python3 ', sys.argv[0], '[<modelfile> [<exploitvsexploreconstant> [<bestlowerconfidenceboundselection>]]]"')
     exit(1)
 
-if len(sys.argv) > 2:
+if len(sys.argv) > 3:
     selection_mode = "best lower confidence bound selection"
 else:
     selection_mode = "highest number of visits"
+
+if len(sys.argv) > 2:
+    balance_constant = float(sys.argv[2])
 
 forcemove = False
 
@@ -217,7 +231,7 @@ while True:
             eval = leaf.valuepos() # simulation
             backpropagate(leaf.parent, -eval)
             calculated_positions += 1
-        print('# ', calculated_positions, ' positions evaluated')
+        print('# ', calculated_positions, ' positions evaluated with ', hitsevaltable, ' evaltable hits')
 
         # pick best child and update root
         bestvalue = -float('inf')
