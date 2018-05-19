@@ -2,7 +2,6 @@
 
 import Const
 import matplotlib.pyplot as plt
-from Eval import Eval 
 
 import numpy as np
 import glob, shutil
@@ -10,6 +9,13 @@ import pickle
 import os
 import sys
 import time
+
+from keras.models import load_model
+from FeaturesExtraction import extract_features
+import numpy as np
+import chess.uci
+
+
 
 if len(sys.argv)<2:
     print("Plot the confusion graph using validation samples")
@@ -22,27 +28,29 @@ else:
     numsamples = 999999999
 
 if len(sys.argv)>=3: 
-    eval = Eval(sys.argv[2])
+    modeleval = load_model(modelfile=sys.argv[2])                               
     print("Using model "+sys.argv[2])
 else:
-    eval = Eval()
+    modeleval = load_model(Const.MODELFILE+".hdf5") 
 
 xcoords=[]
 ycoords=[]
 starttime = time.time()
+b = chess.Board()
 for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     numsamples -= 1
     if numsamples<=0: break
-    (epd, X, Y) = pickle.load(open(file, "rb"))
-    val = eval.EvaluatePosition(epd)[0] # model evaluation
+    (epd, X, Y1, Y2) = pickle.load(open(file, "rb"))
+    b.set_epd(epd)
+    val = modeleval.predict(np.array([extract_features(b)]), batch_size=1)[0][0]
     ycoords.append(val)
-    if Y[0] < -Const.INFINITECP:
+    if Y1[0] < -Const.INFINITECP:
         xcoords.append(-Const.INFINITECP)
-    elif Y[0] > Const.INFINITECP:
+    elif Y1[0] > Const.INFINITECP:
         xcoords.append(Const.INFINITECP)
     else:
-        xcoords.append(Y[0])
-    print(file+" "+epd+" sf:"+str(Y[0])+" nn:"+str(val))
+        xcoords.append(Y1[0])
+    print(file+" "+epd+" sf:"+str(Y1[0])+" nn:"+str(val))
 elapsed=time.time()-starttime
 print(str(int(sys.argv[1]))+" samples in "+str(elapsed)+" seconds = "+str(int(sys.argv[1])/elapsed)+" nodes/sec")
     
