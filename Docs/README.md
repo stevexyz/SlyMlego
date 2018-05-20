@@ -19,30 +19,6 @@ Actual training is supervised, based on expert chess engines position (states in
 Note that the chess engine used to label positions is exploring a full tree of them to calculate the position value, while this network is calculating the value just looking at the current position! Naturally, when inserted in an engine also this network will be used to explore a tree, but if it will work properly it will explore far much less positions to have the same strength results.
 
 
-## Tasks
-
-Tasks completed:
-- Creation of the framework to prepare input data (extract and save features together with labels)
-- Implementation of the extraction of a number of features (30 total up to now)
-- Implementation of the training process for the models with fit "generator" and checkpoints model saving
-- Creation of the value function for the engine implementation
-- Creation of some help scripts to be used in the training process
-- Creation of a very simple chess engine implementing the evaluation model
-
-Tasks to be done:
-- Preparation: extract even more features (details down) and use more engines for labelling
-- Training: experiment with different models / verify long training sessions results
-
-Nice things that can be done in later phases:
-- Implementation of "policy network"
-- Improve training with reinforcement learning
-- Autodiscovery of optimal model and hyperparameters (and maybe optimal input features)
-- Input features minimization / model optimization
-- Chess engine optimized implementation
-
-PS: I'm not (still?) a "pythonist": this is my second project on it and the first was some 15 years ago: so if you are an expert don't be afraid to suggest more pythonic ways to manage things!
-
-
 ## Audience
 
 Everyone knowing chess rules and a bit of python should be able to easily add new input features and create or modify models, and if you are a Deep Learning expert hope you'll find this framework very comfortable to experiment with! And please, share experiments and results! :)
@@ -163,22 +139,13 @@ print-x.py | Print the extracted feature vectors of the already processed positi
 Temporary files | Description
 ---- | ----
 __model.descr | Features and model description (attributes, layers, activators, optimizator etc)
-__model.hdf5  | Trained model snapshot. THE result of all the training effort! (to be load by keras load_model function)
+__model*.hdf5  | Trained model snapshot. THE result of all the training effort! (to be load by keras load_model function)
 __model.log | Training log
 __model.pickle | Other model variables (for now contains just the model mane)
 __model.png | Picture of the model
 __inputstobeprocessed | Directory where X files for training are put by PrepareInput.py. The files have a name as `file.epd-linenum-positionnum.pickle`
 __inputsalreadyprocessed | Directory where input files are put after being used in training (to be moved again in to be processed for new trainings)
 __validationdata | Input files to be used for validation of the model after each epoch
-
-
-## Actual tests
-
-Up to now I've just tested with CPU, running just some models one night each. From the chart seems the system is learning, but with a very slow rate for now. Hope to find better models or new features to improve the situation. As said if someone would try it with a better hw or more time or different models please share the experience (e.g. with a pull request or opening an issue)!
-
-<img src="https://github.com/stevexyz/SlyMlego/blob/master/docs/ex01.png" alt="TF scalars" style="width: 600px;"/>
-
-<img src="https://github.com/stevexyz/SlyMlego/blob/master/docs/ex02.png" alt="Confusion graph" style="width: 400px;"/>
 
 
 ## Acknowledgements
@@ -191,4 +158,3 @@ Thanks to:
 ## LICENSE
 
 Sly Mlego is licensed under the Affero GPL v3 (or any later version at your option). Check out LICENSE file for the full text.
-
