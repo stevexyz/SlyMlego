@@ -27,11 +27,14 @@ fi
 
 slice=$((((endline - initialline) / numberofprocesses) +1))
 
+pwd=`pwd`
+
 echo $slice
 
 for ((i=$initialline; i<$endline; i+=$slice)); do
-    xterm +hold -e /usr/bin/python3 ./Trainmodel.py $i $slice &
+    echo RUN $i $slice \( $initialline $endline \)
+    xterm -hold -e "/bin/bash -c 'cd $pwd && /usr/bin/python3 PrepareInput.py $epdfile $i $slice'" &
+    sleep 1
 done
-
 exit 0
 

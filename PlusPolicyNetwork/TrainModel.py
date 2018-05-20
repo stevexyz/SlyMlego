@@ -73,7 +73,7 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
         if len(X)>0:
             yield ( np.array(X), {"value": np.array(Y1), "policy": np.array(Y2)} )
         else:
-            print("Not enough elements")
+            print("Not enough elements", flush=True)
             sleep(160)
         if epdfile!=None and not validationset:
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic...
@@ -104,7 +104,7 @@ if len(oldmodels)!=0:
     oldmodels.sort(reverse=True)
     lastmodel = oldmodels[0]
 
-    # "-v{:0>6d}.hdf5", ver
+    # "__model-v{:0>6d}.hdf5"
     ver = int( lastmodel[(lastmodel.index("-v")+len("-v")):lastmodel.index(".hdf5")] )
 
     model = load_model(lastmodel)
@@ -122,27 +122,50 @@ else:
 
     modelname = "Policy-Test001"
 
+
+    net_size = 64
+
+    initializer = "lecun_uniform"
+
     def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
         shortcut = y
         if cardinality == 1:
-            y = Conv2D(nb_channels_in, kernel_size=(3,3), strides=(1,1), padding='same', use_bias=False)(y)
+            y = Conv2D(nb_channels_in, \
+                       kernel_initializer=initializer,
+                       kernel_size=(3,3), \
+                       strides=(1,1), \
+                       padding='same', \
+                       use_bias=False) (y)
         else:
             assert not nb_channels_in % cardinality
             _d = nb_channels_in // cardinality
             groups = []
             for j in range(cardinality):
                 group = Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
-                groups.append(Conv2D(_d, kernel_size=(3,3), strides=(1,1), padding='same', use_bias=False)(group))
+                groups.append(Conv2D(_d, \
+                                     kernel_initializer=initializer,
+                                     kernel_size=(3,3), \
+                                     strides=(1,1), \
+                                     padding='same', \
+                                     use_bias=False) (group))
             y = concatenate(groups)
         y = BatchNormalization(axis=-1)(y)
         y = ELU()(y)
         y = add([shortcut, y])
         return y
 
+
     input_tensor = Input(shape=(8, 8, Const.NUMFEATURES))
 
-    net_size = 64
-    network = Conv2D(net_size, kernel_size=(3,3), strides=(1, 1), padding='same', use_bias=False) \
+
+    network = input_tensor
+
+    network = Conv2D(net_size, \
+                     kernel_initializer=initializer,
+                     kernel_size=(3,3), \
+                     strides=(1, 1), \
+                     padding='same', \
+                     use_bias=False) \
                   (input_tensor)
     network = BatchNormalization(axis=-1) \
                   (network)
@@ -151,28 +174,62 @@ else:
     for i in range(2):
         network = residual_block(network, net_size, net_size, 2)
 
+
     network_value = network
+
+    network_value = Conv2D(net_size, \
+                           kernel_initializer=initializer,
+                           kernel_size=(3,3), \
+                           strides=(1, 1), \
+                           padding='same', \
+                           use_bias=False, \
+                           activation="sigmoid") \
+                        (network_value)
     network_value = GlobalAveragePooling2D() \
                         (network_value)
-    network_value = Dense(1, activation="tanh", name="value") \
+    network_value = Dense(1, 
+                          kernel_initializer=initializer,
+                          activation="tanh", \
+                          name="value") \
                         (network_value)
 
+
     network_policy = network
-    network_policy = Conv2D(net_size, kernel_size=(1,1), strides=(1, 1), padding='same', use_bias=False, activation="sigmoid") \
+
+    network_policy = Conv2D(net_size, 
+                            kernel_initializer=initializer,
+                            kernel_size=(3,3), 
+                            strides=(1, 1), 
+                            padding='same', 
+                            use_bias=False, 
+                            activation="sigmoid") \
                         (network_policy)
-    network_policy = Reshape((8,8,8,8), name="policy") \
+    network_policy = Conv2D(net_size, 
+                            kernel_initializer=initializer,
+                            kernel_size=(1,1), 
+                            strides=(1, 1), 
+                            padding='same', 
+                            use_bias=False, 
+                            activation="sigmoid") \
                         (network_policy)
+    network_policy = Reshape((8,8,8,8), 
+                             name="policy") \
+                        (network_policy)
+
 
     model = Model(inputs=input_tensor, outputs=[network_value, network_policy])
 
     model.compile(
         loss={"value": "mean_absolute_percentage_error", "policy": "mean_absolute_error"},
+        loss_weights={"value": 1, "policy": 100},
         optimizer='nadam',
         metrics=["mse", "mae", "mape", "cosine"])
+
 
     # include/exclude evaluations in certain ranges of centipawns
     includerange = False
     excluderange = (-50,50) # in order to limit error percentage
+
 
     #----------
     #@modelend
@@ -192,11 +249,36 @@ else:
     # PReLU
     # LeakyReLU
 
+    # initializers:
+    # Identity(gain=1.0)
+    # Constant(value=0)
+    # RandomNormal(mean=0.0, stddev=0.05)
+    # RandomUniform(minval=-0.05, maxval=0.05)
+    # TruncatedNormal(mean=0.0, stddev=0.05)
+    # VarianceScaling(scale=1.0, mode='fan_in', distribution='normal')
+    # Orthogonal(gain=1.0)
+    # lecun_normal()
+    # lecun_uniform()
+    # glorot_normal()
+    # glorot_uniform()
+    # he_normal()
+    # he_uniform()
+
     # losses:
-    # mean_squared_logarithmic_error, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error,
-    # squared_hinge, hinge, logcosh, categorical_hinge,
-    # categorical_crossentropy, sparse_categorical_crossentropy, binary_crossentropy,
-    # kullback_leibler_divergence, poisson, cosine_proximity
+    # mean_squared_logarithmic_error 
+    # mean_squared_error 
+    # mean_absolute_error 
+    # mean_absolute_percentage_error
+    # squared_hinge 
+    # hinge 
+    # logcosh 
+    # categorical_hinge
+    # categorical_crossentropy
+    # sparse_categorical_crossentropy
+    # binary_crossentropy
+    # kullback_leibler_divergence
+    # poisson
+    # cosine_proximity
 
     # optimizers:
     # SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)

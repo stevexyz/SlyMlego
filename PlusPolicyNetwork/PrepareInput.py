@@ -78,7 +78,8 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
     
         ys = np.exp(yv) / np.sum(np.exp(yv), axis=0) # softmax of move values
         for i in range(len(ym)):
-            Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]
+            if not math.isnan(ys[i]):
+                Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]
 
         pickle.dump(
             (epdposition, X, Y1, Y2),

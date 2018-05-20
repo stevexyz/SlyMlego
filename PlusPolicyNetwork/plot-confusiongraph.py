@@ -28,7 +28,7 @@ else:
     numsamples = 999999999
 
 if len(sys.argv)>=3: 
-    modeleval = load_model(modelfile=sys.argv[2])                               
+    modeleval = load_model(sys.argv[2])                               
     print("Using model "+sys.argv[2])
 else:
     modeleval = load_model(Const.MODELFILE+".hdf5") 
