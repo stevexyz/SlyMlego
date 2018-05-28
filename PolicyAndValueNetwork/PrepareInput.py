@@ -60,10 +60,10 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
     for i in range(1, len(info_handler1.info["pv"])+1):
         ym.append( str(info_handler1.info["pv"][i][0]).upper() )
         if info_handler1.info["score"][i].mate is None:
-            yv.append( info_handler1.info["score"][i].cp / SOFTMAX_CURVE )
+            yv.append( info_handler1.info["score"][i].cp )
         else:
             # adjust return e.g. mate in -2
-            yv.append( math.copysign(Const.INFINITECP, info_handler1.info["score"][i].mate) / SOFTMAX_CURVE )
+            yv.append( math.copysign(Const.INFINITECP, info_handler1.info["score"][i].mate) )
 
     if len(yv)>0:
 
@@ -76,7 +76,7 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
     
         Y1[0] = yv[0]
     
-        ys = np.exp(yv) / np.sum(np.exp(yv), axis=0) # softmax of move values
+        ys = (np.exp(yv)/SOFTMAX_CURVE) / np.sum((np.exp(yv)/SOFTMAX_CURVE), axis=0) # softmax of move values
         for i in range(len(ym)):
             if not math.isnan(ys[i]):
                 Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]

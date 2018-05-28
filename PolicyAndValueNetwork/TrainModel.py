@@ -6,7 +6,7 @@ import Const
 EPOCHSTEPS = 10 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
 VALIDATIONSTEPS = 100 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 200 # number of data in a generator sample
+SAMPLENUM = 1000 # number of data in a generator sample
 
 
 from keras.models import *
@@ -47,10 +47,11 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
         for file in glob.glob(pickledirectory+"/*.pickle"):
             #print("Loading: "+file)
             try:
-                (epd, X1, Y11, Y21) = pickle.load(open(file, "rb"))
+                (epd, X1, Y11x, Y21) = pickle.load(open(file, "rb"))
             except:
                 print("Error on file: "+str(file))
             else:
+                Y11 = Y11x[0] # temp *10 if pre SOFTMAXCURVE correction
                 if not (includerange and (Y11<=includerange[0] or Y11>=includerange[1])) and not (excluderange and (Y11>excluderange[0] and Y11<excluderange[1])):
                     X.append(X1)
                     if Y11 < -Const.INFINITECP:
@@ -58,9 +59,12 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
                     elif Y11 > Const.INFINITECP:
                         Y11 = Const.INFINITECP
                     Y11 = Y11 / Const.INFINITECP # normalization for tanh activation!
-                    Y1.append(Y11)
+                    Y1.append([Y11])
                     Y2.append(Y21)
                     sn = sn+1
+                    if includerange or excluderange: print(" o(",Y11,")", end="")
+                else:
+                    print(" x(",Y11,")", end="")
             if not validationset:
                 try:
                     if epdfile!=None:
@@ -74,7 +78,7 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
             yield ( np.array(X), {"value": np.array(Y1), "policy": np.array(Y2)} )
         else:
             print("Not enough elements", flush=True)
-            sleep(160)
+            sleep(300)
         if epdfile!=None and not validationset:
             tcurrentline=currentline; currentline+=EPOCHSTEPS # almost atomic...
             print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
@@ -123,13 +127,14 @@ else:
     modelname = "Policy-Test001"
 
 
-    net_size = 64
-
+    net_size = 128
     initializer = "lecun_uniform"
+
 
     def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
         shortcut = y
         if cardinality == 1:
+            # standard ResNet
             y = Conv2D(nb_channels_in, \
                        kernel_initializer=initializer,
                        kernel_size=(3,3), \
@@ -137,6 +142,7 @@ else:
                        padding='same', \
                        use_bias=False) (y)
         else:
+            # ResNext with paeallel convolutions
             assert not nb_channels_in % cardinality
             _d = nb_channels_in // cardinality
             groups = []
@@ -171,13 +177,14 @@ else:
                   (network)
     network = ELU() \
                   (network)
-    for i in range(2):
-        network = residual_block(network, net_size, net_size, 2)
+
+    for i in range(8):
+        network = residual_block(network, net_size, net_size, 1)
 
 
     network_value = network
 
-    network_value = Conv2D(net_size, \
+    network_value = Conv2D(16, \
                            kernel_initializer=initializer,
                            kernel_size=(3,3), \
                            strides=(1, 1), \
@@ -185,10 +192,13 @@ else:
                            use_bias=False, \
                            activation="sigmoid") \
                         (network_value)
-    network_value = GlobalAveragePooling2D() \
+   
+    network_value = Flatten() \
                         (network_value)
+
     network_value = Dense(1, 
                           kernel_initializer=initializer,
+                          use_bias=False, \
                           activation="tanh", \
                           name="value") \
                         (network_value)
@@ -204,7 +214,7 @@ else:
                             use_bias=False, 
                             activation="sigmoid") \
                         (network_policy)
-    network_policy = Conv2D(net_size, 
+    network_policy = Conv2D(64, 
                             kernel_initializer=initializer,
                             kernel_size=(1,1), 
                             strides=(1, 1), 
@@ -228,7 +238,7 @@ else:
 
     # include/exclude evaluations in certain ranges of centipawns
     includerange = False
-    excluderange = (-50,50) # in order to limit error percentage
+    excluderange = (-25,25) # in order to limit error percentage
 
 
     #----------

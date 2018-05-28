@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -eq 0 ] ; then
-    echo Usage: $0 "epdfile [numberofprocesses [initialline [endline]]]" 
+    echo Usage: $0 "epdfile [numberofprocesses [initialline [totallinetoprocess]]]" 
     exit 1
 fi
 
@@ -22,7 +22,8 @@ fi
 if [ -z "$4" ] ; then
     endline=`cat $epdfile | wc -l`
 else
-    endline=$4
+    linestoprocess=$4
+    endline=$((initialline + linestoprocess))
 fi
 
 slice=$((((endline - initialline) / numberofprocesses) +1))

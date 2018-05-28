@@ -28,7 +28,7 @@ for i1 in range(8):
         for i3 in range(8):
             for i4 in range(8):
                 if Y2[i1,i2,i3,i4]>0:
-                    print("move: ",i1,i2,i3,i4)
+                    print("move ",i1,i2,i3,i4," = ",Y2[i1,i2,i3,i4])
 
 
 for f in range(Const.NUMFEATURES):

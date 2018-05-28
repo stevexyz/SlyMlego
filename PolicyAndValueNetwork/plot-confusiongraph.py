@@ -28,10 +28,19 @@ else:
     numsamples = 999999999
 
 if len(sys.argv)>=3: 
-    modeleval = load_model(sys.argv[2])                               
-    print("Using model "+sys.argv[2])
+    lastmodel = sys.argv[2]                               
 else:
-    modeleval = load_model(Const.MODELFILE+".hdf5") 
+    allmodels = glob.glob(Const.MODELFILE+"-v*.hdf5")
+    if len(allmodels)!=0:
+        # load the last version
+        allmodels.sort(reverse=True)
+        lastmodel = allmodels[0]
+    else:
+        print("No model found")
+        exit(1)
+modeleval = load_model(lastmodel) 
+print("Using model "+lastmodel)
+    
 
 xcoords=[]
 ycoords=[]
@@ -42,7 +51,7 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     if numsamples<=0: break
     (epd, X, Y1, Y2) = pickle.load(open(file, "rb"))
     b.set_epd(epd)
-    val = modeleval.predict(np.array([extract_features(b)]), batch_size=1)[0][0]
+    val = modeleval.predict(np.array([extract_features(b)]), batch_size=1)[0][0] * Const.INFINITECP
     ycoords.append(val)
     if Y1[0] < -Const.INFINITECP:
         xcoords.append(-Const.INFINITECP)
