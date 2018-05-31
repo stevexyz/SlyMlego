@@ -6,7 +6,7 @@ import Const
 EPOCHSTEPS = 10 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
 VALIDATIONSTEPS = 100 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 800 # number of data in a generator sample
+SAMPLENUM = 1000 # number of data in a generator sample
 
 
 from keras.models import *
@@ -24,11 +24,16 @@ import glob, shutil
 import pickle
 import os
 import sys
-import math
 import subprocess
 
 import logging
 import optparse
+LOGGING_LEVELS = {'critical': logging.CRITICAL,
+                  'error': logging.ERROR,
+                  'warning': logging.WARNING,
+                  'info': logging.INFO,
+                  'debug': logging.DEBUG}
+
 
 epdfile=None
 currentline=0
@@ -48,29 +53,33 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
         Y1 = [] # position value
         Y2 = [] # move probability matrix
         for file in glob.glob(pickledirectory+"/*.pickle"):
-            #logging.debug("Loading: "+file)
+            #print("Loading: "+file)
             try:
                 (epd, X1, Y11x, Y21) = pickle.load(open(file, "rb"))
             except:
-                logging.warning("Error on file: "+str(file))
+                print("Error on file: "+str(file))
             else:
-                Y11 = Y11x[0]
-                if not math.isnan(Y11):
-                    if not (includerange and (Y11<=includerange[0] or Y11>=includerange[1])) and not (excluderange and (Y11>excluderange[0] and Y11<excluderange[1])):
-                        X.append(X1)
-                        if Y11 < -Const.INFINITECP:
-                            Y11 = -Const.INFINITECP
-                        elif Y11 > Const.INFINITECP:
-                            Y11 = Const.INFINITECP
-                        Y11 = Y11 / Const.INFINITECP # normalization for tanh activation!
-                        Y1.append([Y11])
-                        Y2.append(Y21)
-                        sn = sn+1
-                        logging.debug(" y("+str(Y11*Const.INFINITECP)+")", end="")
-                    else:
-                        logging.debug(" n("+str(Y11)+")", end="")
+
+
+
+                Y11 = Y11x[0] *10 #######################################################################################################ààif pre SOFTMAXCURVE correction
+                print(" x10", end="")
+
+
+
+                if not (includerange and (Y11<=includerange[0] or Y11>=includerange[1])) and not (excluderange and (Y11>excluderange[0] and Y11<excluderange[1])):
+                    X.append(X1)
+                    if Y11 < -Const.INFINITECP:
+                        Y11 = -Const.INFINITECP
+                    elif Y11 > Const.INFINITECP:
+                        Y11 = Const.INFINITECP
+                    Y11 = Y11 / Const.INFINITECP # normalization for tanh activation!
+                    Y1.append([Y11])
+                    Y2.append(Y21)
+                    sn = sn+1
+                    print(" y(",Y11*Const.INFINITECP,")", end="")
                 else:
-                    logging.warning(file+" value is nan")
+                    print(" n(",Y11,")", end="")
             if not validationset:
                 try:
                     if epdfile!=None:
@@ -78,7 +87,7 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
                     else:
                         shutil.move(file, Const.ALREADYPROCESSEDDIR)
                 except:
-                    logging.warning("Error moving or removing")
+                    print("Error moving or removing")
             if sn>=SAMPLENUM: break
         if len(X)>0:
             yield ( np.array(X), {"value": np.array(Y1), "policy": np.array(Y2)} )
@@ -100,21 +109,16 @@ def rmse(y_true, y_pred):
 #MAIN:
 
 
-LOGGING_LEVELS = {'critical': logging.CRITICAL,
-                  'error': logging.ERROR,
-                  'warning': logging.WARNING,
-                  'info': logging.INFO,
-                  'debug': logging.DEBUG}
-parser = optparse.OptionParser(usage="usage: %prog [options] [epdfile [initialline]]")
+parser = optparse.OptionParser(usage="usage: %prog [options] [epdfile [initialline]]",
+                               version="%prog 1.0")
 parser.add_option('-l', '--logging-level', help='Logging level')
 parser.add_option('-f', '--logging-file', help='Logging file name')
 (options, args) = parser.parse_args()
-logging_level = LOGGING_LEVELS.get(options.logging_level, logging.WARNING)
+logging_level = LOGGING_LEVELS.get(options.logging_level, logging.NOTSET)
 logging.basicConfig(level=logging_level, filename=options.logging_file,
                     format='%(asctime)s %(levelname)s: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-# TODO: to change all print function with "logging.debug" or "logging.info"...
-
+# TODO: to change all print function with "logging.debug" ...
 
 
 
@@ -149,146 +153,132 @@ else:
     #@modelbegin
     #----------
 
-    modelname = "Policy-Mattew"
+    modelname = "Policy-Test002"
 
+
+    net_size = 64
+    residual_layers = 4
+    resnext_parallel = 1
     initializer = "random_uniform"
+
+
+    def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
+        shortcut = y
+        if cardinality == 1:
+            # standard ResNet
+            y = Conv2D(nb_channels_in, \
+                       kernel_initializer=initializer,
+                       kernel_size=(3,3), \
+                       strides=(1,1), \
+                       padding='same', \
+                       activation=None, \
+                       use_bias=False) (y)
+        else:
+            # ResNext with paeallel convolutions
+            assert not nb_channels_in % cardinality
+            _d = nb_channels_in // cardinality
+            groups = []
+            for j in range(cardinality):
+                group = Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
+                groups.append(Conv2D(_d, \
+                                     kernel_initializer=initializer,
+                                     kernel_size=(3,3), \
+                                     strides=(1,1), \
+                                     padding='same', \
+                                     activation=None, \
+                                     use_bias=False) (group))
+            y = concatenate(groups)
+        y = BatchNormalization(axis=-1) (y)
+        y = Activation('relu') (y)
+        y = add([shortcut, y])
+        return y
+
 
     input_tensor = Input(shape=(8, 8, Const.NUMFEATURES))
 
-    #----------
+
     network = input_tensor
 
-    network = Conv2D(64, \
-                     kernel_initializer=initializer, \
-                     kernel_size=(7,7), \
-                     strides=(1,1), \
-                     padding='same', \
-                     activation=None, \
-                     use_bias=False) \
-                  (network)
-
-    network = ELU() \
-                  (network)
-
-    network = Conv2D(64, \
-                     kernel_initializer=initializer, \
-                     kernel_size=(5,5), \
-                     strides=(1,1), \
-                     padding='same', \
-                     activation=None, \
-                     use_bias=False) \
-                  (network)
-
-    network = ELU() \
-                  (network)
-
-    network = Conv2D(64, \
-                     kernel_initializer=initializer, \
+    network = Conv2D(net_size, \
+                     kernel_initializer=initializer,
                      kernel_size=(3,3), \
                      strides=(1,1), \
                      padding='same', \
                      activation=None, \
                      use_bias=False) \
+                  (input_tensor)
+    network = BatchNormalization(axis=-1) \
+                  (network)
+    network = Activation("relu") \
                   (network)
 
-    network = ELU() \
-                  (network)
+    for i in range(residual_layers):
+        network = residual_block(network, net_size, net_size, resnext_parallel)
 
-    network = Dropout(0.1) \
-                  (network)
 
-    #----------
     network_value = network
 
-    #network_value = Flatten() \
-    #                    (network_value)
-    #
-    #network_value = Dense(256, \
-    #                kernel_initializer=initializer, \
-    #                use_bias=False, \
-    #                activation=None) \
-    #                    (network_value)
-    #
-    #network_value = ELU() \
-    #                    (network_value)
-
-    network_value = Conv2D(64, \
-                    kernel_initializer=initializer, \
-                    kernel_size=(3,3), \
-                    strides=(1,1), \
-                    padding='same', \
-                    activation=None, \
-                    use_bias=False) \
+    network_value = Conv2D(net_size, \
+                           kernel_initializer=initializer,
+                           kernel_size=(3,3), \
+                           strides=(1,1), \
+                           padding='same', \
+                           use_bias=False, \
+                           activation=None) \
                         (network_value)
-
-    network_value = ELU() \
-                        (network_value)
-
-    network_value = Conv2D(64, \
-                    kernel_initializer=initializer, \
-                    kernel_size=(1,1), \
-                    strides=(1,1), \
-                    padding='same', \
-                    activation=None, \
-                    use_bias=False) \
-                        (network_value)
+   
+    #network = Activation("sigmoid") \
+    #              (network_value)
 
     network_value = Flatten() \
                         (network_value)
-    
-    network_value = Dense(1, \
-                    kernel_initializer=initializer, \
-                    activation=None, \
-                    use_bias=False) \
+
+    network_value = Dense(1, 
+                          kernel_initializer=initializer,
+                          use_bias=False, \
+                          activation="tanh", \
+                          name="value") \
                         (network_value)
 
-    network_value = Activation("tanh", \
-                    name="value") \
-                        (network_value)
 
-    #----------
     network_policy = network
 
-    network_policy = Conv2D(64, \
-                     kernel_initializer=initializer, \
-                     kernel_size=(3,3), \
-                     strides=(1,1), \
-                     padding='same', \
-                     activation=None, \
-                     use_bias=False) \
-                         (network_policy)
-
-    network_policy = ELU() \
+    network_policy = Conv2D(net_size,
+                            kernel_initializer=initializer,
+                            kernel_size=(3,3),
+                            strides=(1,1),
+                            padding='same',
+                            use_bias=False,
+                            activation=None) \
                         (network_policy)
 
-    network_policy = Conv2D(64, \
-                     kernel_initializer=initializer, \
-                     kernel_size=(1,1), \
-                     strides=(1,1), \
-                     padding='same', \
-                     activation=None, \
-                     use_bias=False) \
-                         (network_policy)
+    network_policy = Conv2D(64, 
+                            kernel_initializer=initializer,
+                            kernel_size=(1,1), 
+                            strides=(1,1), 
+                            padding='same', 
+                            use_bias=False, 
+                            activation="sigmoid") \
+                        (network_policy)
 
-    network_policy = Reshape((8,8,8,8)) \
-                         (network_policy)
+    network_policy = Reshape((8,8,8,8), 
+                             name="policy") \
+                        (network_policy)
 
-    network_policy = Activation("sigmoid", \
-                                name="policy") \
-                         (network_policy)
-
-    #----------
 
     model = Model(inputs=input_tensor, outputs=[network_value, network_policy])
 
     model.compile(
-        loss={"value": "mean_absolute_percentage_error", "policy": "categorical_crossentropy"},
-        # loss_weights={"value": 1, "policy": 100},
-        optimizer='nadam')
+        loss={"value": "mean_absolute_percentage_error", "policy": "mean_absolute_error"},
+        #... loss_weights={"value": 1, "policy": 100},
+        optimizer='adamax',
+        metrics=["mse", "mae", "mape", "cosine"])
+
 
     # include/exclude evaluations in certain ranges of centipawns
     includerange = False
     excluderange = (-25,25) # in order to limit error percentage
+
 
     #----------
     #@modelend

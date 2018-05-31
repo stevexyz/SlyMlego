@@ -25,7 +25,7 @@ if len(sys.argv)<2:
 if len(sys.argv)>=2:
     numsamples = int(sys.argv[1])
 else:
-    numsamples = 999999999
+    numsamples = 500
 
 if len(sys.argv)>=3: 
     lastmodel = sys.argv[2]                               
@@ -50,17 +50,47 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     numsamples -= 1
     if numsamples<=0: break
     (epd, X, Y1, Y2) = pickle.load(open(file, "rb"))
+
     b.set_epd(epd)
-    val = modeleval.predict(np.array([extract_features(b)]), batch_size=1)[0][0] * Const.INFINITECP
+
+    ym = modeleval.predict(np.array([extract_features(b)]), batch_size=1)
+
+    val = ym[0][0][0] * Const.INFINITECP
     ycoords.append(val)
+
     if Y1[0] < -Const.INFINITECP:
         xcoords.append(-Const.INFINITECP)
     elif Y1[0] > Const.INFINITECP:
         xcoords.append(Const.INFINITECP)
     else:
         xcoords.append(Y1[0])
-    print(file+" "+epd+" sf:"+str(Y1[0])+" nn:"+str(val))
+
+    print("---")
+    print(file+":  "+epd)
+    print("Evaluation   SF: %-5.2f   NN: %-5.2f"%(Y1[0],val))
+
+    l = []
+    for m in b.generate_legal_moves():
+        a = str(m).upper()
+        l.append((m, Y2[ord(a[0])-65, ord(a[1])-49, ord(a[2])-65, ord(a[3])-49]))
+    print("sorted moves SF: ", end="")
+    for m in sorted(l, key=lambda e: e[1], reverse=True):
+        print(str(m[0]), " ", end="")
+    print("")
+
+    l = []
+    for m in b.generate_legal_moves():
+        a = str(m).upper()
+        l.append((m, ym[1][0][ord(a[0])-65, ord(a[1])-49, ord(a[2])-65, ord(a[3])-49]))
+    print("sorted moves NN: ", end="")
+    for m in sorted(l, key=lambda e: e[1], reverse=True):
+        print(str(m[0]), " ", end="")
+    print("")
+
+
 elapsed=time.time()-starttime
+print("---")
+print("---")
 print(str(int(sys.argv[1]))+" samples in "+str(elapsed)+" seconds = "+str(int(sys.argv[1])/elapsed)+" nodes/sec")
     
 plt.autoscale = False
