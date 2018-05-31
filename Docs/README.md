@@ -118,34 +118,34 @@ Example features still possible to implement to substitute or extend current one
 
 Python file | Description
 ---- | ----
-Const.py | Common constant values used in other files
-Eval.py | Contains evaluation function (to be inserted in chess engine)
-FeaturesExtraction.py | Extract features vector "X" from a chess position
-PrepareInput.py | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: `PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]`
-TrainModel.py | Model creation and training <br/> Usage: `TrainModel.py [fenOrEpdFile [startingPosition]]` <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
-OnePlyEngine.py | Simple UCI engine (single PLY evaluation). 
+`Const.py` | Common constant values used in other files
+`Eval.py` | Contains evaluation function (to be inserted in chess engine)
+`FeaturesExtraction.py` | Extract features vector "X" from a chess position
+`PrepareInput.py` | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: `PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]`
+`TrainModel.py` | Model creation and training <br/> Usage: `TrainModel.py [fenOrEpdFile [startingPosition]]` <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
+`*Engine.py` | XBOARD compatible engines 
 
 Auxiliary shell script | Description
 ---- | ----
-clean-model.sh | Clean all model files in order to start from scratch with a new model
-clean-model-and-data.sh | Clean all model files but also extracts data (to be used when features extraction changed)
-monitor-log.sh | When training process in ongoing shows main advancements
-monitor-tensorboard.sh | Launch tensorboard for training process analysis (and/or TF model exploration)
-mv-backtoprocess.py | Move the "already processed" files back in the "to be processed" directory (a script was required since command line is not able to manage very large number of files as it can happen to have)
-mv-tovalidation.py | Move the files in the "to be processed" directory to the directory used to validate model
-print-confusiongraph.py | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
-print-x.py | Print the extracted feature vectors of the already processed position given in input (pickle file)
+`clean-model.sh` | Clean all model files in order to start from scratch with a new model
+`clean-model-and-data.sh` | Clean all model files but also extracts data (to be used when features extraction changed)
+`monitor-log.sh` | When training process in ongoing shows main advancements
+`monitor-tensorboard.sh` | Launch tensorboard for training process analysis (and/or TF model exploration)
+`mv-backtoprocess.py` | Move the "already processed" files back in the "to be processed" directory (a script was required since command line is not able to manage very large number of files as it can happen to have)
+`mv-tovalidation.py` | Move the files in the "to be processed" directory to the directory used to validate model
+`plot-confusiongraph.py` | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
+`print-x.py` | Print the extracted feature vectors of the already processed position given in input (pickle file)
 
 Temporary files | Description
 ---- | ----
-__model.descr | Features and model description (attributes, layers, activators, optimizator etc)
-__model*.hdf5  | Trained model snapshot. THE result of all the training effort! (to be load by keras load_model function)
-__model.log | Training log
-__model.pickle | Other model variables (for now contains just the model mane)
-__model.png | Picture of the model
-__inputstobeprocessed | Directory where X files for training are put by PrepareInput.py. The files have a name as `file.epd-linenum-positionnum.pickle`
-__inputsalreadyprocessed | Directory where input files are put after being used in training (to be moved again in to be processed for new trainings)
-__validationdata | Input files to be used for validation of the model after each epoch
+`__model.descr` | Features and model description (attributes, layers, activators, optimizator etc)
+`__model*.hdf5`  | Trained model snapshot. THE result of all the training effort! (to be load by keras load_model function)
+`__model.log` | Training log
+`__model.pickle` | Other model variables (e.g. inclusion/exclusion training ranges)
+`__model.png` | Picture of the model
+`__inputstobeprocessed` | Directory where X files for training are put by `PrepareInput.py`. The files have a name as `file.epd-linenum-positionnum.pickle`
+`__inputsalreadyprocessed` | Directory where input files are put after being used in training (to be moved again in to be processed for new trainings)
+`__validationdata` | Input files to be used for validation of the model after each epoch
 
 
 ## Acknowledgements
@@ -153,6 +153,7 @@ __validationdata | Input files to be used for validation of the model after each
 Thanks to:
 - Francois Hollet and Niklas Fellas for making simple abstraction libraries
 - Mihai Dobre and Massimo Natale for their initial counseling
+- Matthia Sabatelli for the nice discussions and precious suggestions
 
 
 ## LICENSE
