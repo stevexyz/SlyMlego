@@ -1,0 +1,15 @@
+
+download from: https://www.ficsgames.org/download.html
+
+bzip2 -d ficsgamesdb_2017_standard2000_movetimes_1547241.pgn.bz2
+
+pgn-extract -C -D  ficsgamesdb_2017_standard2000_movetimes_1547241.pgn > ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D.pgn
+
+pgn-extract --fencomments ficsgamesdb_2017_standard2000_movetimes_1547241-C-D.pgn > ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D--fencomments.pgn
+
+sed -i -e 's/Event/\{\_\}/g' ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D--fencomments.pgn
+
+cat ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D--fencomments.pgn | grep -Po "(?<=\{).*?(?=\})" > ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D--fencomments_justfens.pgn
+
+./fendistribute.py ficsgamesdb_2017_standard2000_movetimes_1547241_pgn-extract_-C-D--fencomments_justfens.pgn
+

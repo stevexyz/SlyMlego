@@ -101,22 +101,12 @@ ENV/
 .mypy_cache/
 
 # slymlego miscellaneous directory and files
-old*/
-Old*/
-OLD*/
-temp*/
-Temp*/
-TEMP*/
-local*/
-Local*/
-LOCAL*/
+.*
 *~
-*.old
-*.Old
-*.OLD
-*.bak
-*.Bak
-*.BAK
 __*
 *.debug
-.*
+*.[Oo][Ll][Dd]
+*.[Bb][Aa][Kk]
+[Oo][Ll][Dd]*/
+[Tt]][Ee][Mm][Pp]*/
+[Ll][Oo][Cc][Aa][Ll]*/

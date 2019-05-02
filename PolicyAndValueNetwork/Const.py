@@ -1,3 +1,4 @@
+import sys
 
 # directories and files
 TOBEPROCESSEDDIR = "__inputstobeprocessed"
@@ -7,7 +8,15 @@ MODELFILE = "__model"
 
 # engine configuration for input preparation
 MOVETIME = 5000 # increase when model starts to be good
-ENGINE1 = "stockfish"
+#print("Platform:", sys.platform)
+if sys.platform == "Windows" or sys.platform == "win32":
+    ENGINE1 = "c:\\Portable Programs\\stockfish-10-win\\Windows\\stockfish_10_x64_popcnt.exe"
+    from pathlib import Path
+    enginefile = Path(ENGINE1)
+    if not enginefile.is_file():
+        error("Correct the path for the engine in the file Const.py") 
+else:
+    ENGINE1 = "stockfish"
 OPENINGBOOK = "__book.bin"
 INFINITECP = 2000 # 20 centipawn...
 

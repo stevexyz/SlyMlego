@@ -10,6 +10,10 @@ import pickle
 import pickledb
 import os
 
+from pathlib import Path
+#data_folder = "source_data/text_files/")
+#file_to_open = data_folder / "raw_data.txt"
+
 import FeaturesExtraction as fe
 
 
@@ -24,11 +28,12 @@ if len(sys.argv) < 2:
           "<nomefile.epd> [<initial-line> [<number-of-position-to-process>]]")
     exit(1)
 
+print("Using engine", Const.ENGINE1)
 engine1 = chess.uci.popen_engine(Const.ENGINE1)
 engine1.setoption({"MultiPV": 50})
 info_handler1 = chess.uci.InfoHandler()
 engine1.info_handlers.append(info_handler1)
-board = chess.Board() 
+board = chess.Board()
 
 lines = [line.rstrip('\n') for line in open(sys.argv[1])]
 if len(sys.argv) >= 3:
@@ -73,9 +78,9 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
         # Y2 is the policy tensor (from 8x8 x to 8x8): softmax of the value of the moves available, 0 the others
         Y1 = np.zeros((1))
         Y2 = np.zeros((8,8,8,8))
-    
+
         Y1[0] = yv[0]
-    
+
         ys = (np.exp(yv)/SOFTMAX_CURVE) / np.sum((np.exp(yv)/SOFTMAX_CURVE), axis=0) # softmax of move values
         for i in range(len(ym)):
             if not math.isnan(ys[i]):
@@ -83,8 +88,9 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
 
         pickle.dump(
             (epdposition, X, Y1, Y2),
-             open(Const.TOBEPROCESSEDDIR + "/" +
-                 (sys.argv[1]).replace("/", "_") + "-" +
-                  str(line + initialline) + "-" + str(i) + ".pickle", "wb"))
-    
+             open(Path(Const.TOBEPROCESSEDDIR + "/" +
+                       (Path(sys.argv[1])).name + "-" +
+                        str(line + initialline) + "-" + str(i) + ".pickle"),
+                  "wb"))
+
 exit(0)
