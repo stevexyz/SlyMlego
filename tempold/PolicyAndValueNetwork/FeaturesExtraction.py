@@ -7,7 +7,8 @@ from keras import backend as K
 import sys
 import math
 import numpy as np
-import chess.uci
+import chess
+import chess.engine
 import pickle
 
 import logging, sys

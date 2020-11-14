@@ -5,22 +5,22 @@ import Const
 import sys
 import math
 import numpy as np
-import chess.uci
+import chess
+import chess.engine
 import pickle
 import pickledb
 import os
-
 from pathlib import Path
-#data_folder = "source_data/text_files/")
-#file_to_open = data_folder / "raw_data.txt"
 
 import FeaturesExtraction as fe
 
-
-SOFTMAX_CURVE = 10 # the higher the flatter (adapt move value in centipawn)
-
-
 # MAIN
+
+DEBUG = False
+if DEBUG:
+    sys.argv.append("../EpdFiles/stsall.epd")
+    sys.argv.append("2")
+    sys.argv.append("10")
 
 if len(sys.argv) < 2:
     print("Usage:",
@@ -29,10 +29,10 @@ if len(sys.argv) < 2:
     exit(1)
 
 print("Using engine", Const.ENGINE1)
-engine1 = chess.uci.popen_engine(Const.ENGINE1)
-engine1.setoption({"MultiPV": 50})
-info_handler1 = chess.uci.InfoHandler()
-engine1.info_handlers.append(info_handler1)
+engine1 = chess.engine.SimpleEngine.popen_uci(Const.ENGINE1)
+engine1.configure({"Threads": Const.ENGINETHREADS})
+engine1.configure({"Hash": Const.HASHSIZE})
+
 board = chess.Board()
 
 lines = [line.rstrip('\n') for line in open(sys.argv[1])]
@@ -55,36 +55,44 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
         epdposition = fe.fen_invert_position(epdposition)
         board.set_epd(epdposition)
 
-    engine1.position(board)
-    engine1.go(movetime=Const.MOVETIME)
+    info = engine1.analyse(board, chess.engine.Limit(time=Const.MOVETIME), multipv=99)
 
-    print(str(initialline+line)+": "+" ".join(epdposition.split()[0:4])+" x"+str(len(info_handler1.info["pv"])))
+    print(str(initialline+line)+": "+" ".join(epdposition.split()[0:4])+" x"+str(len(info)))
 
-    yv = []
-    ym = []
-    for i in range(1, len(info_handler1.info["pv"])+1):
-        ym.append( str(info_handler1.info["pv"][i][0]).upper() )
-        if info_handler1.info["score"][i].mate is None:
-            yv.append( info_handler1.info["score"][i].cp )
-        else:
-            # adjust return e.g. mate in -2
-            yv.append( math.copysign(Const.INFINITECP, info_handler1.info["score"][i].mate) )
+    maxscore = -9999
+    ym = [] # moves
+    yv = [] # score of the moves
+    for pos in info:
+        score = pos["score"]
+        score = str(score.pov(score.turn))
+        if score[0]=="#":
+            if score[1]=='-': score = - Const.INFINITECP
+            else: score = Const.INFINITECP
+        else: score = int(score)
+        if score > maxscore: maxscore = score
+        ym.append( str(pos["pv"][0]).upper() )
+        yv.append( score / 100.0 ) # value in pawns (and not centipawns) prevent softmax to explode
 
     if len(yv)>0:
 
         X = fe.extract_features(board)
 
         # Y1 is the position value
-        # Y2 is the policy tensor (from 8x8 x to 8x8): softmax of the value of the moves available, 0 the others
+        # Y2 is the policy tensor value (from 8x8 x to 8x8): 4096 position containing softmax of the score value for the legal moves, 0 the others
         Y1 = np.zeros((1))
         Y2 = np.zeros((8,8,8,8))
 
-        Y1[0] = yv[0]
+        Y1[0] = maxscore
 
-        ys = (np.exp(yv)/SOFTMAX_CURVE) / np.sum((np.exp(yv)/SOFTMAX_CURVE), axis=0) # softmax of move values
+        ys = np.exp(yv)
+        ys /= np.sum(ys, axis=0) # softmax of move values
+        # for i in range(len(ym)): print(ym[i], yv[i], ys[i])
+
         for i in range(len(ym)):
             if not math.isnan(ys[i]):
                 Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]
+            else:
+                raise ValueError("Softmax returned a NaN!")
 
         pickle.dump(
             (epdposition, X, Y1, Y2),
@@ -92,5 +100,7 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
                        (Path(sys.argv[1])).name + "-" +
                         str(line + initialline) + "-" + str(i) + ".pickle"),
                   "wb"))
+
+engine1.quit()
 
 exit(0)
