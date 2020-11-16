@@ -18,9 +18,12 @@ import FeaturesExtraction as fe
 
 DEBUG = False
 if DEBUG:
-    sys.argv.append("../EpdFiles/stsall.epd")
-    sys.argv.append("2")
-    sys.argv.append("10")
+    sys.argv.append("../EpdFiles/__temp/fics2017standard2000middlegames.epd")
+    sys.argv.append("220")
+    sys.argv.append("1")
+    #sys.argv.append("../EpdFiles/stsall.epd")
+    #sys.argv.append("2")
+    #sys.argv.append("10")
 
 if len(sys.argv) < 2:
     print("Usage:",
@@ -51,55 +54,59 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
 
     # always switch in order now to move is black and responses evaluations are on white side
     board.set_epd(epdposition)
+    # always evaluate from white perspective
     if board.turn != chess.WHITE:
-        epdposition = fe.fen_invert_position(epdposition)
-        board.set_epd(epdposition)
+        #epdposition = fe.fen_invert_position(epdposition)
+        #board.set_epd(epdposition)
+        board.apply_mirror()
+    
+    if not board.is_game_over():
 
-    info = engine1.analyse(board, chess.engine.Limit(time=Const.MOVETIME), multipv=99)
+        info = engine1.analyse(board, chess.engine.Limit(time=Const.MOVETIME), multipv=99)
 
-    print(str(initialline+line)+": "+" ".join(epdposition.split()[0:4])+" x"+str(len(info)))
+        print(str(initialline+line)+": "+" ".join(epdposition.split()[0:4])+" x"+str(len(info)))
 
-    maxscore = -9999
-    ym = [] # moves
-    yv = [] # score of the moves
-    for pos in info:
-        score = pos["score"]
-        score = str(score.pov(score.turn))
-        if score[0]=="#":
-            if score[1]=='-': score = - Const.INFINITECP
-            else: score = Const.INFINITECP
-        else: score = int(score)
-        if score > maxscore: maxscore = score
-        ym.append( str(pos["pv"][0]).upper() )
-        yv.append( score / 100.0 ) # value in pawns (and not centipawns) prevent softmax to explode
+        maxscore = -9999
+        ym = [] # moves
+        yv = [] # score of the moves
+        for pos in info:
+            score = pos["score"]
+            score = str(score.pov(score.turn))
+            if score[0]=="#":
+                if score[1]=='-': score = - Const.INFINITECP
+                else: score = Const.INFINITECP
+            else: score = int(score)
+            if score > maxscore: maxscore = score
+            ym.append( str(pos["pv"][0]).upper() )
+            yv.append( score / 100.0 ) # value in pawns (and not centipawns) prevent softmax to explode
 
-    if len(yv)>0:
+        if len(yv)>0:
 
-        X = fe.extract_features(board)
+            X = fe.extract_features(board)
 
-        # Y1 is the position value
-        # Y2 is the policy tensor value (from 8x8 x to 8x8): 4096 position containing softmax of the score value for the legal moves, 0 the others
-        Y1 = np.zeros((1))
-        Y2 = np.zeros((8,8,8,8))
+            # Y1 is the position value
+            # Y2 is the policy tensor value (from 8x8 x to 8x8): 4096 position containing softmax of the score value for the legal moves, 0 the others
+            Y1 = np.zeros((1))
+            Y2 = np.zeros((8,8,8,8))
 
-        Y1[0] = maxscore
+            Y1[0] = maxscore
 
-        ys = np.exp(yv)
-        ys /= np.sum(ys, axis=0) # softmax of move values
-        # for i in range(len(ym)): print(ym[i], yv[i], ys[i])
+            ys = np.exp(yv)
+            ys /= np.sum(ys, axis=0) # softmax of move values
+            # for i in range(len(ym)): print(ym[i], yv[i], ys[i])
 
-        for i in range(len(ym)):
-            if not math.isnan(ys[i]):
-                Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]
-            else:
-                raise ValueError("Softmax returned a NaN!")
+            for i in range(len(ym)):
+                if not math.isnan(ys[i]):
+                    Y2[ ord(ym[i][0])-65, ord(ym[i][1])-49, ord(ym[i][2])-65, ord(ym[i][3])-49 ] = ys[i]
+                else:
+                    raise ValueError("Softmax returned a NaN!")
 
-        pickle.dump(
-            (epdposition, X, Y1, Y2),
-             open(Path(Const.TOBEPROCESSEDDIR + "/" +
-                       (Path(sys.argv[1])).name + "-" +
-                        str(line + initialline) + "-" + str(i) + ".pickle"),
-                  "wb"))
+            pickle.dump(
+                (epdposition, X, Y1, Y2),
+                open(Path(Const.TOBEPROCESSEDDIR + "/" +
+                        (Path(sys.argv[1])).name + "-" +
+                            str(line + initialline) + "-" + str(i) + ".pickle"),
+                    "wb"))
 
 engine1.quit()
 

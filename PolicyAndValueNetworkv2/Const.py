@@ -17,11 +17,11 @@ else:
     ENGINE1 = "stockfish"
 
 # engine configuration for input preparation
-MOVETIME = 3 # seconds, increase when model starts to be good...
+MOVETIME = 2 # seconds, increase when model starts to be good...
 ENGINETHREADS = 10 # to be edited depending on system...
 HASHSIZE = 8000 # to be edited depending on system...
 
-OPENINGBOOK = "__book.bin"
+#OPENINGBOOK = "__book.bin"
 INFINITECP = 2000 # centipawn
 
 # Input matrixes IDs (all 8x8)

@@ -5,7 +5,7 @@ import Const
 # to be incremented over time (quick beginning precise later)
 EPOCHSTEPS = 5 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
-VALIDATIONSTEPS = 100 # number of minibatch samples to be given for validation (one sample given back for each generator call)
+VALIDATIONSTEPS = 200 # number of minibatch samples to be given for validation (one sample given back for each generator call)
 SAMPLENUM = 2000 # number of data in a generator sample
 
 
