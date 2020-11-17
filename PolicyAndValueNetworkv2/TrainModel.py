@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 
-import Const
-
-# to be incremented over time (quick beginning precise later)
-EPOCHSTEPS = 5 # number of minibatch samples
+# to be adjusted over time (quick beginning precise later)
+EPOCHSTEPS = 3 # number of minibatch samples
 EPOCHSNUM = 1000000 # number of epochs to go for
 VALIDATIONSTEPS = 200 # number of minibatch samples to be given for validation (one sample given back for each generator call)
-SAMPLENUM = 2000 # number of data in a generator sample
+SAMPLENUM = 777 # number of data in a generator sample
 
+import Const
 
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
@@ -26,13 +25,13 @@ import os
 import sys
 import math
 import subprocess
-
 import logging
 import optparse
+import chess
+import FeaturesExtraction as fe
 
 epdfile=None
 currentline=0
-
 
 def get_chess_training_positions(pickledirectory, validationset=False, includerange=False, excluderange=False):
 # for multithread see: http://anandology.com/blog/using-iterators-and-generators/
@@ -50,10 +49,16 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
         for file in glob.glob(pickledirectory+"/*.pickle"):
             #logging.debug("Loading: "+file)
             try:
-                (epd, X1, Y11x, Y21) = pickle.load(open(file, "rb"))
+                (epdposition, X1, Y11x, Y21) = pickle.load(open(file, "rb"))
             except:
                 logging.warning("Error on file: "+str(file))
             else:
+                board = chess.Board()
+                board.set_epd(epdposition)
+                if board.turn != chess.WHITE:
+                    board.apply_mirror() # board features were always extracted with white perspective even if in the past black epd was also written
+                if len(X1)!=8 or len(X1[0])!=8 or len(X1[0][0])!=fe.NUMFEATURES:
+                    X1 = fe.extract_features(board) # if absent or not coherent on the file calculate (good to force if changing features...)
                 Y11 = Y11x[0]
                 if not math.isnan(Y11):
                     if not( ( includerange and (Y11<=includerange[0] or Y11>=includerange[1]) ) \
@@ -91,13 +96,11 @@ def get_chess_training_positions(pickledirectory, validationset=False, includera
             print("./PrepareInput.py "+epdfile+" "+str(currentline)+" "+str(EPOCHSTEPS*SAMPLENUM))
             subprocess.call(['./PrepareInput.py',epdfile,str(tcurrentline),str(EPOCHSTEPS*SAMPLENUM)])
 
-
 def root_mean_squared_error(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
 
 def rmse(y_true, y_pred):
     return root_mean_squared_error(y_true, y_pred)
-
 
 #MAIN:
 
@@ -136,7 +139,7 @@ else:
     #----------
     modelname = "Policy-Mattew"
     initializer = "random_uniform"
-    input_tensor = Input(shape=(8, 8, Const.NUMFEATURES))
+    input_tensor = Input(shape=(8, 8, fe.NUMFEATURES))
     #----------
     network = input_tensor
     network = Conv2D(64, \
@@ -169,7 +172,7 @@ else:
                   (network)
     network = ELU() \
                   (network)
-    network = Dropout(0.1) \
+    network = Dropout(0.05) \
                   (network)
     #----------
     network_value = network
@@ -184,16 +187,16 @@ else:
     #
     #network_value = ELU() \
     #                    (network_value)
-    network_value = Conv2D(64, \
-                    kernel_initializer=initializer, \
-                    kernel_size=(3,3), \
-                    strides=(1,1), \
-                    padding='same', \
-                    activation=None, \
-                    use_bias=False) \
-                        (network_value)
-    network_value = ELU() \
-                        (network_value)
+    #network_value = Conv2D(64, \
+    #                kernel_initializer=initializer, \
+    #                kernel_size=(3,3), \
+    #                strides=(1,1), \
+    #                padding='same', \
+    #                activation=None, \
+    #                use_bias=False) \
+    #                    (network_value)
+    #network_value = ELU() \
+    #                    (network_value)
     network_value = Conv2D(64, \
                     kernel_initializer=initializer, \
                     kernel_size=(1,1), \
@@ -214,16 +217,16 @@ else:
                         (network_value)
     #----------
     network_policy = network
-    network_policy = Conv2D(64, \
-                     kernel_initializer=initializer, \
-                     kernel_size=(3,3), \
-                     strides=(1,1), \
-                     padding='same', \
-                     activation=None, \
-                     use_bias=False) \
-                         (network_policy)
-    network_policy = ELU() \
-                        (network_policy)
+    #network_policy = Conv2D(64, \
+    #                 kernel_initializer=initializer, \
+    #                 kernel_size=(3,3), \
+    #                 strides=(1,1), \
+    #                 padding='same', \
+    #                 activation=None, \
+    #                 use_bias=False) \
+    #                     (network_policy)
+    #network_policy = ELU() \
+    #                    (network_policy)
     network_policy = Conv2D(64, \
                      kernel_initializer=initializer, \
                      kernel_size=(1,1), \
@@ -241,7 +244,7 @@ else:
     model = Model(inputs=input_tensor, outputs=[network_value, network_policy])
     model.compile(
         loss={"value": "mean_absolute_percentage_error", "policy": "categorical_crossentropy"},
-        # loss_weights={"value": 1, "policy": 100},
+        loss_weights={"value": 0.01, "policy": 1}, # value will be in pawn
         optimizer='nadam')
     # evaluations in certain ranges of centipawns can be included or excluded
     includerange = False
@@ -332,7 +335,7 @@ model.fit(
     epochs=EPOCHSNUM,
     verbose=1,
     callbacks=[
-        ModelCheckpoint(Const.MODELFILE+"-v{epoch:02d}-loss{val_loss:.2f}.hdf5", monitor='loss', verbose=1, save_best_only=False, period=1),
+        ModelCheckpoint(Const.MODELFILE+"-v{epoch:05d}-loss{val_loss:09.2f}.hdf5", monitor='loss', verbose=1, save_best_only=False, period=1),
         CSVLogger(Const.MODELFILE+"-log.csv", separator=";", append=True),
         TensorBoard(log_dir="__logs/{}".format(time())),
         #LossHistory(),

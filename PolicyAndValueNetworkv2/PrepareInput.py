@@ -28,8 +28,14 @@ if DEBUG:
 if len(sys.argv) < 2:
     print("Usage:",
           sys.argv[0],
-          "<nomefile.epd> [<initial-line> [<number-of-position-to-process>]]")
+          "<nomefile.epd> [--nofeatures] [<initial-line> [<number-of-position-to-process>]]")
     exit(1)
+
+if sys.argv[0]=="--nofeatures":
+    sys.argv.remove("--nofeatures")
+    nofeatures = True
+else:
+    nofeatures = False
 
 print("Using engine", Const.ENGINE1)
 engine1 = chess.engine.SimpleEngine.popen_uci(Const.ENGINE1)
@@ -56,8 +62,6 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
     board.set_epd(epdposition)
     # always evaluate from white perspective
     if board.turn != chess.WHITE:
-        #epdposition = fe.fen_invert_position(epdposition)
-        #board.set_epd(epdposition)
         board.apply_mirror()
     
     if not board.is_game_over():
@@ -82,7 +86,12 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
 
         if len(yv)>0:
 
-            X = fe.extract_features(board)
+            if nofeatures:
+                X = [] # recalculated in the Training each time the position is load
+                # removed precalculation of features and left in file just for compatibility
+                # this way every model can change features as they want
+            else:
+                X = fe.extract_features(board) 
 
             # Y1 is the position value
             # Y2 is the policy tensor value (from 8x8 x to 8x8): 4096 position containing softmax of the score value for the legal moves, 0 the others
@@ -102,7 +111,7 @@ for line in range(int(sys.argv[3]) if len(sys.argv)>=4 else len(lines)):
                     raise ValueError("Softmax returned a NaN!")
 
             pickle.dump(
-                (epdposition, X, Y1, Y2),
+                (board.epd(), X, Y1, Y2),
                 open(Path(Const.TOBEPROCESSEDDIR + "/" +
                         (Path(sys.argv[1])).name + "-" +
                             str(line + initialline) + "-" + str(i) + ".pickle"),
