@@ -229,12 +229,14 @@ else:
         inputs=input_tensor, 
         outputs=[network_value, 
                  network_policy])
+
     optimizer = keras.optimizers.Nadam(clipnorm=1)
+
     model.compile(
         loss={"poseval": "mean_absolute_error", 
               "policy": "categorical_crossentropy"},
         loss_weights={"poseval": 1, 
-                      "policy": 100},
+                      "policy": 1},
         optimizer=optimizer)
 
     # evaluations in certain ranges of centipawns can be included or excluded
