@@ -51,17 +51,12 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 **Train the model**:
 1. Get fen/epd positions for training (there are some to be unzipped in the `EpdFiles` directory)
 2. Prepare training input -> e.g. `python PrepareInput.py file.epd 1 100000`
-3. Put some of the position prepared from `__inputstobeprocessed` into `__validationdata` -> e.g. `python mv-tovalidation.py 1000`
+3. Put some of the position prepared from `__inputstobeprocessed` into `__validationdata` (e.g. 2000)
 4. Train model -> e.g. `python TrainModel.py` (you can run tensorboard to check results)
-5. Play with the engine -> Eval function is ready: you can try it with `python print-confusiongraph.py` or let me know if you'll insert it in an engine! :)
-
-**Alternatively train the model without keeping files**:
-1. Get fen/epd positions for training
-2. Prepare validation data -> e.g. `python PrepareInput.py file.epd 1 1000 && python mv-tovalidation.py 1000`
-3. Train model -> e.g. `python TrainModel.py file.epd 1001`
+5. Play with the engine or graphically check evaluations against standard engine with `python draw-confusiongraph.py`
 
 **Reset model / learning**:
-1. Remove saved model file -> `./clean-model.sh`
+1. Remove model files -> `./clean-model.sh`
 2. Put back all training files in inputfiletoprocess directory -> `python mv-backtoprocess.py`
 
 **Add training samples** (and train):
@@ -69,7 +64,7 @@ Everyone knowing chess rules and a bit of python should be able to easily add ne
 2. Continue training model -> `python TrainModel.py`
 
 **Backup the trained model**:
-1. Move or copy all `__model.*` files in a new directory
+1. Move or copy all `__model.*` files in a new directory (there is `archive-model.sh` for convenience)
 
 **Restore the trained model** (and train more):
 1. Copy all the previously saved `__model.*` back to main directory
@@ -77,13 +72,13 @@ Note: features should be the same of the model saved else input layer will not m
 
 **Add/modify features**:
 1. Remove all training files from all directories -> `./clean-model-and-data.sh`
-2. Modify `FeatureExtraction.py` program and add/modify features (in `Const.py` there is the list of features)
-3. To see features extracted use `python print_x.py` (note that is adapting dimension order and coordinates for pretty printing)
+2. Modify `FeatureExtraction.py` program and add/modify features
+3. To see features extracted use `python print-pickle.py` (note that is adapting dimension order and coordinates for pretty printing)
 4. Prepare and train again
 
 **Evaluate a single chess position**:
 1. Copy the trained model to be used (`__model.hdf5`) in the current directory
-2. Call to `EvaluatePosition(board)` function (in `Eval.py`) with the fen string of the position to be evaluated return the evaluation score in centipawns
+2. Call to `single-position-evaluation.py` with the fen string of the position to be evaluated
 
 
 ## TROUBLESHOOTING
@@ -119,11 +114,10 @@ Example features still possible to implement to substitute or extend current one
 Python file | Description
 ---- | ----
 `Const.py` | Common constant values used in other files
-`Eval.py` | Contains evaluation function (to be inserted in chess engine)
 `FeaturesExtraction.py` | Extract features vector "X" from a chess position
 `PrepareInput.py` | Script to extract and save features from .fen/.epd files in order to be used in training model <br/> Usage: `PrepareInput.py fenOrEpdFile [startingPosition [numberOfPositionToProcess]]`
 `TrainModel.py` | Model creation and training <br/> Usage: `TrainModel.py [fenOrEpdFile [startingPosition]]` <br/> With no parameters uses the extracted features present in the "to be processed" directory (done with PrepareInput.py) and move them in the "already processed" directory while using them. If epd file is specified the features are extracted just temporarily and deleted after being used. 
-`*Engine.py` | XBOARD compatible engines 
+`*XBoard2.py` | XBOARD compatible engines 
 
 Auxiliary shell script | Description
 ---- | ----
@@ -133,8 +127,8 @@ Auxiliary shell script | Description
 `monitor-tensorboard.sh` | Launch tensorboard for training process analysis (and/or TF model exploration)
 `mv-backtoprocess.py` | Move the "already processed" files back in the "to be processed" directory (a script was required since command line is not able to manage very large number of files as it can happen to have)
 `mv-tovalidation.py` | Move the files in the "to be processed" directory to the directory used to validate model
-`plot-confusiongraph.py` | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
-`print-x.py` | Print the extracted feature vectors of the already processed position given in input (pickle file)
+`draw-confusiongraph.py` | Print a "confusion graph" showing actual evaluations of validation samples compared to the ones computed by engine (optional input different model file than the one under training)
+`print-pickle.py` | Print the extracted feature vectors of the already processed position given in input (pickle file)
 
 Temporary files | Description
 ---- | ----

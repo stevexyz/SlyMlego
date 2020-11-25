@@ -13,19 +13,17 @@ import time
 from keras.models import load_model
 from FeaturesExtraction import extract_features
 import numpy as np
-import chess.uci
+import chess.engine
 
-
-
-if len(sys.argv)<2:
-    print("Plot the confusion graph using validation samples")
-    print("Usage: "+sys.argv[0]+" [<numsamples> [<modelfile>]]")
-    exit(1)
+#if len(sys.argv)<2:
+#    print("Plot the confusion graph using validation samples")
+#    print("Usage: "+sys.argv[0]+" [<numsamples> [<modelfile>]]")
+#    exit(1)
 
 if len(sys.argv)>=2:
     numsamples = int(sys.argv[1])
 else:
-    numsamples = 500
+    numsamples = 400
 
 if len(sys.argv)>=3: 
     lastmodel = sys.argv[2]                               
@@ -41,7 +39,6 @@ else:
 modeleval = load_model(lastmodel) 
 print("Using model "+lastmodel)
     
-
 xcoords=[]
 ycoords=[]
 starttime = time.time()
@@ -52,11 +49,18 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
     (epd, X, Y1, Y2) = pickle.load(open(file, "rb"))
 
     b.set_epd(epd)
+    if b.turn != chess.WHITE:
+        b.apply_mirror()
 
     ym = modeleval.predict(np.array([extract_features(b)]), batch_size=1)
 
     val = ym[0][0][0] * Const.INFINITECP
-    ycoords.append(val)
+    if val < -Const.INFINITECP:
+        ycoords.append(-Const.INFINITECP)
+    elif val > Const.INFINITECP:
+        ycoords.append(Const.INFINITECP)
+    else:
+        ycoords.append(val)
 
     if Y1[0] < -Const.INFINITECP:
         xcoords.append(-Const.INFINITECP)
@@ -87,20 +91,19 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
         print(str(m[0]), " ", end="")
     print("")
 
-
 elapsed=time.time()-starttime
 print("---")
 print("---")
-print(str(int(sys.argv[1]))+" samples in "+str(elapsed)+" seconds = "+str(int(sys.argv[1])/elapsed)+" nodes/sec")
+print(str(numsamples)+" samples in "+str(elapsed)+" seconds = "+str(numsamples/elapsed)+" nodes/sec")
     
 plt.autoscale = False
-plt.axis([-Const.INFINITECP, Const.INFINITECP, -Const.INFINITECP, Const.INFINITECP])
+plt.axis([-Const.INFINITECP-1, Const.INFINITECP+1, -Const.INFINITECP-1, Const.INFINITECP+1])
 plt.plot(xcoords,ycoords,"ro")
 plt.grid(True)
 plt.axes().set_aspect('equal')
 plt.ylabel('ann model eval')
 plt.xlabel('std engine eval')
-plt.title('"Confusion plot" of model evaluations')
+plt.title('"Confusion plot" of model evaluations '+lastmodel)
+print("Used model "+lastmodel)
 
 plt.show()
-
