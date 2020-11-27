@@ -1,18 +1,20 @@
 #!/bin/bash
 
-if [ "$1" != "" ]; then
-    mkdir "__archivemodel_$1"
-    mv __model*.* "__archivemodel_$1/"
-    mv __logs "__archivemodel_$1/"
-    cp FeaturesExtraction.py "__archivemodel_$1/"
-    echo "model archived to \"__archivemodel_$1\""
+if [ "$1" != "" ] && [ "$2" != "" ]; then
+    mkdir -p "__archivedmodels/$1"
+    mv "$2"/__model* "__archivedmodels/$1/"
+    mv "$2"/__logs "__archivedmodels/$1/"
+    cp "$2"/FeaturesExtraction.py "__archivedmodels/$1/"
+    echo "model archived to \"__archivedmodels/$1\""
 else
     echo ""
-    echo "Usage: " $0 " <new_model_name>"
-    echo "Note: \"__archivemodel_\" is being added automatically to the name to create the archive directory and directory should not already exists."
+    echo "Usage: " $0 " <new_model_name> <from_directory>"
+    echo "Example: " $0 "test_model_1 ."
+    echo "Example: " $0 "test_model_2 /ramdisk0/PolicyAndValueNetworkv2"
+    echo "Models files are stored in the \"__archivemodels\" directory."
     echo ""
     echo "Current saved models:"
-    ls -1 -d __archivemodel_*
+    ls -1 -d __archivedmodels/*
     echo ""
 fi
 

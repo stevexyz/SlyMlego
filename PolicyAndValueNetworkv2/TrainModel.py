@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 # to be adjusted over time (quick beginning precise later)
-SAMPLENUM = 400 # number of data in a generator minibatch sample
-EPOCHSTEPS = 10 # number of minibatch for epoch
+SAMPLENUM = 500 # number of data in a generator minibatch sample
+EPOCHSTEPS = 20 # number of minibatch for epoch (let's keep around 10k samples per epoch)
 EPOCHSNUM = 9999 # number of epochs to go for
 VALIDATIONSTEPS = 200 # number of samples to be given for validation (one sample given back for each generator call)
 
@@ -144,85 +144,137 @@ if len(oldmodels)!=0:
     # load the last version
     oldmodels.sort(reverse=True)
     lastmodel = oldmodels[0]
-    ver = int( lastmodel[(lastmodel.index("-v")+len("-v")):lastmodel.index("-loss")] ) # "__model-v{:0>6d}.hdf5"
+    initialepoch = int( lastmodel[(lastmodel.index("-v")+len("-v")):lastmodel.index("-loss")] ) # "__model-v{:0>6d}.hdf5"
     model = load_model(lastmodel)
     (modelname,includerange,excluderange) = pickle.load(open(Const.MODELFILE+".pickle","rb")) # model attributes
     print("Loaded model and weights from file ", lastmodel)
+    model.summary()
 
 else:
 
-    ver = 0
+    initialepoch = 0
     #@modelbegin
 
     #----------
-    modelname = "Test4"
+    modelname = "Test7"
 
-    initializer = "random_uniform"
+    initializer = "random_uniform" # "he_normal"
+    #kernel_regularizer = l2(0.0001) ...
+
     input_tensor = Input(shape=(8, 8, fe.NUMFEATURES))
- 
-    network = input_tensor
+    network_1 = input_tensor
 
-    network = Conv2D(
-            64, 
+    network_2 = \
+        Conv2D(
+            360, 
             kernel_initializer=initializer,
-            kernel_size=(8, 8), 
+            kernel_size=(9, 9),
             strides=(1, 1),
             padding='same',
-            use_bias=False) \
+            use_bias=True) \
+                (network_1)
+    
+    network = \
+        BatchNormalization(momentum=0.8) \
                 (network)
 
-    network = Conv2D(
-            64, 
+    network = \
+        ReLU() \
+                (network)
+
+    network = \
+        Conv2D(
+            720, 
             kernel_initializer=initializer,
             kernel_size=(3, 3), 
             strides=(1, 1),
             padding='same',
-            use_bias=False) \
+            use_bias=True) \
+                (network)
+                
+    network = \
+        BatchNormalization(momentum=0.8) \
                 (network)
 
-    network = ELU() \
-            (network)
+    network = \
+        Conv2D(
+            720, 
+            kernel_initializer=initializer,
+            kernel_size=(3, 3), 
+            strides=(1, 1),
+            padding='same',
+            use_bias=True) \
+                (network)
+                
+    network = \
+        ReLU() \
+                (network)
 
-    network = Dropout(0.001) \
-            (network)
+    network = \
+        BatchNormalization(momentum=0.8) \
+                (network)
+
+    network = \
+        Dropout(0.001) \
+                (network)
 
     #----------
-    network_value = network
+    network_value = network # output a position evaluation in the range [-1,1]
 
-    network_value = Flatten() \
-            (network_value)
+    network_value = \
+        Conv2D(
+            720, 
+            kernel_initializer=initializer,
+            kernel_size=(3, 3), 
+            strides=(1, 1),
+            padding='same',
+            use_bias=True) \
+                (network_value)
+
+    network_value = \
+        BatchNormalization(momentum=0.8) \
+                (network_value)
+
+    network_value = \
+        Flatten() \
+                (network_value)
             
-    network_value = Dense(
-        1, \
-        kernel_initializer=initializer, \
-        activation=None, \
-        use_bias=False) \
-            (network_value)
+    network_value = \
+        Dense(
+            1, \
+            kernel_initializer=initializer, \
+            activation=None, \
+            use_bias=False) \
+                (network_value)
 
-    network_value = Activation(
-        "linear", \
-        name="poseval") \
-            (network_value)
+    network_value = \
+        Activation(
+            "linear", \
+            name="poseval") \
+                (network_value)
 
     #----------
-    network_policy = network
+    network_policy = network # output a 8x8x8x8 'softmaxed' value of move probability
 
-    network_policy = Conv2D(
+    network_policy = \
+        Conv2D(
             64, 
             kernel_initializer=initializer,
-            kernel_size=(3, 3), 
+            kernel_size=(1, 1), 
             strides=(1, 1),
             padding='same',
             use_bias=False) \
-            (network_policy)
+                (network_policy)
 
-    network_policy = Activation("softmax") \
-            (network_policy)
+    network_policy = \
+        Activation("softmax") \
+                (network_policy)
 
-    network_policy = Reshape(
-        (8,8,8,8), \
-        name="policy") \
-            (network_policy)
+    network_policy = \
+        Reshape(
+            (8,8,8,8), \
+            name="policy") \
+                (network_policy)
 
     #----------
     model = Model(
@@ -234,9 +286,9 @@ else:
 
     model.compile(
         loss={"poseval": "mean_absolute_error", 
-              "policy": "categorical_crossentropy"},
-        loss_weights={"poseval": 1, 
-                      "policy": 1},
+              "policy": "mean_absolute_error"}, # "categorical_crossentropy"
+        loss_weights={"poseval": 1, # [-1,1]
+                      "policy": 1}, # softmax
         optimizer=optimizer)
 
     # evaluations in certain ranges of centipawns can be included or excluded
@@ -315,6 +367,9 @@ else:
     # sparse_top_k_categorical_accuracy(k)
 
     plot_model(model, to_file=Const.MODELFILE+'.png', show_shapes=True, show_layer_names=True)
+    def filesummary(s): with open(Const.MODELFILE+"_summary.txt",'w+') as f: print(s, file=f)
+    model.summary(print_fn=filesummary)
+    model.summary()
     pickle.dump((modelname,includerange,excluderange), open(Const.MODELFILE+".pickle","wb")) # model attributes
     subprocess.call(["./extract-model.sh",__file__]) # write model to txt file for document purposes
     print("Newly created model with empty weights")
@@ -335,113 +390,4 @@ model.fit(
     max_queue_size=1000,
     workers=1,
     use_multiprocessing=False,
-    initial_epoch=ver)
-
-
-    #OLD STUFF
-    #=========
-    #network = Conv2D(64, kernel_size=(5, 5), strides=(1, 1), padding='same', use_bias=False) \
-    #              (network)
-    #net_size = 64
-    #network = Conv2D(net_size, kernel_size=(5, 5), strides=(1, 1), padding='same', use_bias=False)(input_tensor)
-    #network = BatchNormalization(axis=-1)(network)
-    #network = ELU()(network)
-    #def residual_block(y, nb_channels_in, nb_channels_out, cardinality=4):
-    #    shortcut = y
-    #    if cardinality == 1:
-    #        y = Conv2D(nb_channels_in, kernel_size=(5, 5), strides=(1,1), padding='same', use_bias=False)(y)
-    #    else:
-    #        assert not nb_channels_in % cardinality
-    #        _d = nb_channels_in // cardinality
-    #        groups = []
-    #        for j in range(cardinality):
-    #            group = Lambda(lambda z: z[:, :, :, j * _d:j * _d + _d])(y)
-    #            groups.append(Conv2D(_d, kernel_size=(5, 5), strides=(1,1), padding='same', use_bias=False)(group))
-    #        y = concatenate(groups)
-    #    y = BatchNormalization(axis=-1)(y)
-    #    y = ELU()(y)
-    #    y = add([shortcut, y])
-    #    return y
-    #for i in range(4):
-    #    network = residual_block(network, net_size, net_size)
-    #network = Dense(1)(network)
-    #network = Activation("tanh")(network)
-    #network = Conv2D(64, \
-    #                 kernel_initializer=initializer, \
-    #                 kernel_size=(8,8), \
-    #                 strides=(1,1), \
-    #                 padding='same', \
-    #                 activation=None, \
-    #                 use_bias=False) \
-    #              (network)
-    #network = ELU() \
-    #              (network)
-    #network = Conv2D(64, \
-    #                 kernel_initializer=initializer, \
-    #                 kernel_size=(5,5), \
-    #                 strides=(1,1), \
-    #                 padding='same', \
-    #                 activation=None, \
-    #                 use_bias=False) \
-    #              (network)
-    #network = ELU() \
-    #              (network)
-    #network = Conv2D(64, \
-    #                 kernel_initializer=initializer, \
-    #                 kernel_size=(3,3), \
-    #                 strides=(1,1), \
-    #                 padding='same', \
-    #                 activation=None, \
-    #                 use_bias=False) \
-    #              (network)
-    #network = ELU() \
-    #              (network)
-    #network = Flatten() \
-    #              (network)   
-    #network_value = Flatten() \
-    #                    (network_value)
-    #
-    #network_value = Dense(256, \
-    #                kernel_initializer=initializer, \
-    #                use_bias=False, \
-    #                activation=None) \
-    #                    (network_value)
-    #
-    #network_value = ELU() \
-    #                    (network_value)
-    #network_value = Conv2D(64, \
-    #                kernel_initializer=initializer, \
-    #                kernel_size=(3,3), \
-    #                strides=(1,1), \
-    #                padding='same', \
-    #                activation=None, \
-    #                use_bias=False) \
-    #                    (network_value)
-    #network_value = ELU() \
-    #                    (network_value)
-    #network_value = Conv2D(64, \
-    #                kernel_initializer=initializer, \
-    #                kernel_size=(1,1), \
-    #                strides=(1,1), \
-    #                padding='same', \
-    #                activation=None, \
-    #                use_bias=False) \
-    #                    (network_value)
-    #network_policy = Conv2D(64, \
-    #                 kernel_initializer=initializer, \
-    #                 kernel_size=(3,3), \
-    #                 strides=(1,1), \
-    #                 padding='same', \
-    #                 activation=None, \
-    #                 use_bias=False) \
-    #                     (network_policy)
-    #network_policy = ELU() \
-    #                    (network_policy)
-    #network_policy = Conv2D(64, \
-    #                 kernel_initializer=initializer, \
-    #                 kernel_size=(1,1), \
-    #                 strides=(1,1), \
-    #                 padding='same', \
-    #                 activation=None, \
-    #                 use_bias=False) \
-    #                     (network_policy)
+    initial_epoch=initialepoch)
