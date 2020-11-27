@@ -74,12 +74,12 @@ for file in glob.glob(Const.VALIDATIONDATADIR+"/*.pickle"):
         sfval = Const.INFINITECP
     nnval = ym[0][0][0] * Const.INFINITECP
     if nnval < -Const.INFINITECP:
-        ycoords.append(-Const.INFINITECP)
+        nnval = -Const.INFINITECP
     elif nnval > Const.INFINITECP:
-        ycoords.append(Const.INFINITECP)
+        nnval = Const.INFINITECP
 
     if graphtype==1:
-        ycoords.append(sfval)
+        xcoords.append(sfval)
         ycoords.append(nnval)
 
     print("---")

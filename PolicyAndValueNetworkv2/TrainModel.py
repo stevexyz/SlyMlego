@@ -144,85 +144,106 @@ if len(oldmodels)!=0:
     # load the last version
     oldmodels.sort(reverse=True)
     lastmodel = oldmodels[0]
-    ver = int( lastmodel[(lastmodel.index("-v")+len("-v")):lastmodel.index("-loss")] ) # "__model-v{:0>6d}.hdf5"
+    initialepoch = int( lastmodel[(lastmodel.index("-v")+len("-v")):lastmodel.index("-loss")] ) # "__model-v{:0>6d}.hdf5"
     model = load_model(lastmodel)
     (modelname,includerange,excluderange) = pickle.load(open(Const.MODELFILE+".pickle","rb")) # model attributes
     print("Loaded model and weights from file ", lastmodel)
 
 else:
 
-    ver = 0
+    initialepoch = 0
     #@modelbegin
 
     #----------
-    modelname = "Test4"
+    modelname = "Test6"
 
-    initializer = "random_uniform"
+    initializer = "he_normal" # "random_uniform"
+    #kernel_regularizer = l2(0.0001) ...
+
     input_tensor = Input(shape=(8, 8, fe.NUMFEATURES))
- 
     network = input_tensor
 
-    network = Conv2D(
-            64, 
+    network = \
+        Conv2D(
+            128, 
             kernel_initializer=initializer,
-            kernel_size=(8, 8), 
+            kernel_size=(9, 9), 
             strides=(1, 1),
             padding='same',
-            use_bias=False) \
+            use_bias=True) \
                 (network)
 
-    network = Conv2D(
-            64, 
+    network = \
+        Conv2D(
+            256, 
             kernel_initializer=initializer,
             kernel_size=(3, 3), 
             strides=(1, 1),
             padding='same',
-            use_bias=False) \
+            use_bias=True) \
+                (network)
+                
+    network = \
+        ELU() \
                 (network)
 
-    network = ELU() \
-            (network)
-
-    network = Dropout(0.001) \
-            (network)
+    network = \
+        Dropout(0.001) \
+                (network)
 
     #----------
-    network_value = network
+    network_value = network # output a position evaluation in the range [-1,1]
 
-    network_value = Flatten() \
-            (network_value)
+    network_value = \
+        Conv2D(
+            256, 
+            kernel_initializer=initializer,
+            kernel_size=(3, 3), 
+            strides=(1, 1),
+            padding='same',
+            use_bias=True) \
+                (network_value)
+
+    network_value = \
+        Flatten() \
+                (network_value)
             
-    network_value = Dense(
-        1, \
-        kernel_initializer=initializer, \
-        activation=None, \
-        use_bias=False) \
-            (network_value)
+    network_value = \
+        Dense(
+            1, \
+            kernel_initializer=initializer, \
+            activation=None, \
+            use_bias=False) \
+                (network_value)
 
-    network_value = Activation(
-        "linear", \
-        name="poseval") \
-            (network_value)
+    network_value = \
+        Activation(
+            "linear", \
+            name="poseval") \
+                (network_value)
 
     #----------
-    network_policy = network
+    network_policy = network # output a 8x8x8x8 'softmaxed' value of move probability
 
-    network_policy = Conv2D(
+    network_policy = \
+        Conv2D(
             64, 
             kernel_initializer=initializer,
-            kernel_size=(3, 3), 
+            kernel_size=(1, 1), 
             strides=(1, 1),
             padding='same',
             use_bias=False) \
-            (network_policy)
+                (network_policy)
 
-    network_policy = Activation("softmax") \
-            (network_policy)
+    network_policy = \
+        Activation("softmax") \
+                (network_policy)
 
-    network_policy = Reshape(
-        (8,8,8,8), \
-        name="policy") \
-            (network_policy)
+    network_policy = \
+        Reshape(
+            (8,8,8,8), \
+            name="policy") \
+                (network_policy)
 
     #----------
     model = Model(
@@ -234,9 +255,9 @@ else:
 
     model.compile(
         loss={"poseval": "mean_absolute_error", 
-              "policy": "categorical_crossentropy"},
-        loss_weights={"poseval": 1, 
-                      "policy": 1},
+              "policy": "mean_absolute_error"}, # "categorical_crossentropy"
+        loss_weights={"poseval": 1, # [-1,1]
+                      "policy": 1}, # softmax
         optimizer=optimizer)
 
     # evaluations in certain ranges of centipawns can be included or excluded
@@ -335,8 +356,9 @@ model.fit(
     max_queue_size=1000,
     workers=1,
     use_multiprocessing=False,
-    initial_epoch=ver)
+    initial_epoch=initialepoch)
 
+#=============================================================================================================
 
     #OLD STUFF
     #=========
