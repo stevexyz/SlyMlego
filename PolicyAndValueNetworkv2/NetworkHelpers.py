@@ -1,5 +1,4 @@
 
-
 # https://raw.githubusercontent.com/titu1994/keras-squeeze-excite-network/master/se.py
 
 from keras.layers import GlobalAveragePooling2D, Reshape, Dense, multiply, add, Permute, Conv2D
@@ -662,6 +661,3 @@ def Tiramisu(
     model.summary()
     
     return model
-    
-    
-
