@@ -15,6 +15,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import CSVLogger
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras import backend as K
+from tensorflow.keras.regularizers import *
 from tensorflow.keras.utils import plot_model
 from time import time
 #from time import sleep
@@ -106,6 +107,8 @@ def root_mean_squared_error(y_true, y_pred):
 def rmse(y_true, y_pred):
     return root_mean_squared_error(y_true, y_pred)
 
+channels_last = -1 # constant
+
 #MAIN:
 
 LOGGING_LEVELS = {'critical': logging.CRITICAL,
@@ -156,63 +159,62 @@ else:
     #@modelbegin
 
     #----------
-    modelname = "Test7"
+    modelname = "Test8"
 
     initializer = "random_uniform" # "he_normal"
-    #kernel_regularizer = l2(0.0001) ...
+    kernel_regularizer = l2(l2=0.001)
+
+    convfilters = 120
 
     input_tensor = Input(shape=(8, 8, fe.NUMFEATURES))
-    network_1 = input_tensor
+    network = input_tensor
 
-    network_2 = \
+    network = \
         Conv2D(
-            360, 
+            filters=convfilters, 
             kernel_initializer=initializer,
-            kernel_size=(9, 9),
+            kernel_regularizer=kernel_regularizer,
+            kernel_size=(5, 5),
             strides=(1, 1),
             padding='same',
-            use_bias=True) \
-                (network_1)
-    
+            use_bias=False) \
+                (network)
+
     network = \
-        BatchNormalization(momentum=0.8) \
+        BatchNormalization(momentum=0.9, axis=channels_last) \
                 (network)
 
     network = \
         ReLU() \
                 (network)
 
-    network = \
-        Conv2D(
-            720, 
-            kernel_initializer=initializer,
-            kernel_size=(3, 3), 
-            strides=(1, 1),
-            padding='same',
-            use_bias=True) \
-                (network)
-                
-    network = \
-        BatchNormalization(momentum=0.8) \
-                (network)
+    network_concatenation = [input_tensor, network]
+
+    for i in range(6):
+
+        network = \
+            Conv2D(
+                filters=convfilters, 
+                kernel_initializer=initializer,
+                kernel_regularizer=kernel_regularizer,
+                kernel_size=(3, 3), 
+                strides=(1, 1),
+                padding='same',
+                use_bias=False) \
+                    (network)
+                    
+        network = \
+            BatchNormalization(momentum=0.9, axis=channels_last) \
+                    (network)
+
+        network = \
+            ReLU() \
+                    (network)
+
+        network_concatenation.append( network )
 
     network = \
-        Conv2D(
-            720, 
-            kernel_initializer=initializer,
-            kernel_size=(3, 3), 
-            strides=(1, 1),
-            padding='same',
-            use_bias=True) \
-                (network)
-                
-    network = \
-        ReLU() \
-                (network)
-
-    network = \
-        BatchNormalization(momentum=0.8) \
-                (network)
+        Concatenate()( network_concatenation )
 
     network = \
         Dropout(0.001) \
@@ -221,18 +223,19 @@ else:
     #----------
     network_value = network # output a position evaluation in the range [-1,1]
 
-    network_value = \
+    ''' network_value = \
         Conv2D(
-            720, 
+            180, 
             kernel_initializer=initializer,
+            kernel_regularizer=kernel_regularizer,
             kernel_size=(3, 3), 
             strides=(1, 1),
             padding='same',
-            use_bias=True) \
-                (network_value)
+            use_bias=False) \
+                (network_value) '''
 
     network_value = \
-        BatchNormalization(momentum=0.8) \
+        BatchNormalization(momentum=0.9) \
                 (network_value)
 
     network_value = \
@@ -243,6 +246,7 @@ else:
         Dense(
             1, \
             kernel_initializer=initializer, \
+            kernel_regularizer=kernel_regularizer,
             activation=None, \
             use_bias=False) \
                 (network_value)
@@ -285,10 +289,10 @@ else:
     optimizer = keras.optimizers.Nadam(clipnorm=1)
 
     model.compile(
-        loss={"poseval": "mean_absolute_error", 
-              "policy": "mean_absolute_error"}, # "categorical_crossentropy"
-        loss_weights={"poseval": 1, # [-1,1]
-                      "policy": 1}, # softmax
+        loss={"poseval": "mean_squared_error", 
+              "policy": "mean_squared_error"}, # "categorical_crossentropy"
+        loss_weights={"poseval": 1, # renge:[-1,1]
+                      "policy": 1}, # range:softmax
         optimizer=optimizer)
 
     # evaluations in certain ranges of centipawns can be included or excluded
@@ -367,7 +371,9 @@ else:
     # sparse_top_k_categorical_accuracy(k)
 
     plot_model(model, to_file=Const.MODELFILE+'.png', show_shapes=True, show_layer_names=True)
-    def filesummary(s): with open(Const.MODELFILE+"_summary.txt",'w+') as f: print(s, file=f)
+    def filesummary(s):
+        with open(Const.MODELFILE+"_summary.txt",'w+') as f:
+            print(s, file=f)
     model.summary(print_fn=filesummary)
     model.summary()
     pickle.dump((modelname,includerange,excluderange), open(Const.MODELFILE+".pickle","wb")) # model attributes

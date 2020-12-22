@@ -22,20 +22,21 @@ import chess.engine
 
 if sys.argv[0]=="./draw-confusiongraph-evaluations.py":
     graphtype = 1
+    numsamples = 200 # default
     print("Drawing POSITION EVALUATIONS")
 elif sys.argv[0]=="./draw-confusiongraph-moves.py":
     graphtype = 2
+    numsamples = 20 # default
     print("Drawing MOVE POLICY FITTING")
 elif sys.argv[0]=="./draw-confusiongraph-policy.py":
     graphtype = 3
+    numsamples = 20 # default
     print("Drawing MOVE POLICY VALUES")
 else:
     raise ValueError("Program name "+sys.argv[0]+" not recognized!")
 
 if len(sys.argv)>=2:
     numsamples = int(sys.argv[1])
-else:
-    numsamples = 4
 
 if len(sys.argv)>=3: 
     lastmodel = sys.argv[2]                               

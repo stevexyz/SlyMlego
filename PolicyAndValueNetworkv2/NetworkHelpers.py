@@ -661,3 +661,139 @@ def Tiramisu(
     model.summary()
     
     return model
+
+###############################################################################
+###############################################################################
+
+# https://nbviewer.jupyter.org/github/Calysto/conx-notebooks/blob/master/work-in-progress/AlphaZero.ipynb
+
+## Building the network, layer blocks:
+
+def add_conv_block(net, input_layer):
+    cname = net.add(cx.Conv2DLayer("conv2d-%d",
+                    filters=75,
+                    kernel_size=(4,4),
+                    padding='same',
+                    use_bias=False,
+                    activation='linear',
+                    kernel_regularizer=regularizers.l2(0.0001)))
+    bname = net.add(cx.BatchNormalizationLayer("batch-norm-%d", axis=1))
+    lname = net.add(cx.LeakyReLULayer("leaky-relu-%d"))
+    net.connect(input_layer, cname)
+    net.connect(cname, bname)
+    net.connect(bname, lname)
+    return lname
+
+def add_residual_block(net, input_layer):
+    prev_layer = add_conv_block(net, input_layer)
+    cname = net.add(cx.Conv2DLayer("conv2d-%d",
+        filters=75,
+        kernel_size=(4,4),
+        padding='same',
+        use_bias=False,
+        activation='linear',
+        kernel_regularizer=regularizers.l2(0.0001)))
+    bname = net.add(cx.BatchNormalizationLayer("batch-norm-%d", axis=1))
+    aname = net.add(cx.AdditionLayer("add-%d"))
+    lname = net.add(cx.LeakyReLULayer("leaky-relu-%d"))
+    net.connect(prev_layer, cname)
+    net.connect(cname, bname)
+    net.connect(input_layer, aname)
+    net.connect(bname, aname)
+    net.connect(aname, lname)
+    return lname
+
+def add_value_block(net, input_layer):
+    l1 = net.add(cx.Conv2DLayer("conv2d-%d",
+        filters=1,
+        kernel_size=(1,1),
+        padding='same',
+        use_bias=False,
+        activation='linear',
+        kernel_regularizer=regularizers.l2(0.0001)))
+    l2 = net.add(cx.BatchNormalizationLayer("batch-norm-%d", axis=1))
+    l3 = net.add(cx.LeakyReLULayer("leaky-relu-%d"))
+    l4 = net.add(cx.FlattenLayer("flatten-%d"))
+    l5 = net.add(cx.Layer("dense-%d",
+        20,
+        use_bias=False,
+        activation='linear',
+        kernel_regularizer=regularizers.l2(0.0001)))
+    l6 = net.add(cx.LeakyReLULayer("leaky-relu-%d"))
+    l7 = net.add(cx.Layer('value_head',
+        1,
+        use_bias=False,
+        activation='tanh',
+        kernel_regularizer=regularizers.l2(0.0001)))
+    net.connect(input_layer, l1)
+    net.connect(l1, l2)
+    net.connect(l2, l3)
+    net.connect(l3, l4)
+    net.connect(l4, l5)
+    net.connect(l5, l6)
+    net.connect(l6, l7)
+    return l7
+
+def add_policy_block(net, input_layer):
+    l1 = net.add(cx.Conv2DLayer("conv2d-%d",
+        filters=2,
+        kernel_size=(1,1),
+        padding='same',
+        use_bias=False,
+        activation='linear',
+        kernel_regularizer = regularizers.l2(0.0001)))
+    l2 = net.add(cx.BatchNormalizationLayer("batch-norm-%d", axis=1))
+    l3 = net.add(cx.LeakyReLULayer("leaky-relu-%d"))
+    l4 = net.add(cx.FlattenLayer("flatten-%d"))
+    l5 = net.add(cx.Layer('policy_head',
+                          42,
+                          vshape=(6,7),
+                          use_bias=False,
+                          activation='linear',
+                          kernel_regularizer=regularizers.l2(0.0001)))
+    net.connect(input_layer, l1)
+    net.connect(l1, l2)
+    net.connect(l2, l3)
+    net.connect(l3, l4)
+    net.connect(l4, l5)
+    return l5
+
+def make_network(game, config, residuals=5, name="Residual CNN"):
+    """
+    Make a full network.
+
+    Game is passed in to get the columns and rows.
+    """
+    net = cx.Network(name)
+    net.add(cx.Layer("main_input", (game.v, game.h, 2),
+                     colormap="Greys", minmax=(0,1)))
+    out_layer = add_conv_block(net, "main_input")
+    for i in range(residuals):
+        out_layer = add_residual_block(net, out_layer)
+    add_policy_block(net, out_layer)
+    add_value_block(net, out_layer)
+    net.compile(loss={'value_head': 'mean_squared_error',
+                      'policy_head': softmax_cross_entropy_with_logits},
+                optimizer="sgd",
+                lr=config.LEARNING_RATE,
+                momentum=config.LEARNING_RATE,
+                loss_weights={'value_head': 0.5,
+                              'policy_head': 0.5})
+    for layer in net.layers:
+        if layer.kind() == "hidden":
+            layer.visible = False
+    return net
+
+def LocalMain():
+    NetConfig = namedtuple("NetConfig", [
+        "LEARNING_RATE",
+        "MOMENTUM",
+    ])
+    netconfig = NetConfig(
+        LEARNING_RATE=0.1, # SGD Learning rate
+        MOMENTUM=0.9, # SGD Momentum
+    )
+    net = make_network(game, config=netconfig)
+
+
+
